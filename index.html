@@ -211,5 +211,17 @@
   <script src="renderers.js"></script>
   <script src="services.js"></script>
   <script src="app.js"></script>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const rotateBack = params.get("rotateBack");
+      if (!rotateBack) return;
+      const duration = 60000;
+      setTimeout(function() {
+        window.location.href = decodeURIComponent(rotateBack);
+      }, duration);
+    })();
+  </script>
 </body>
 </html>
