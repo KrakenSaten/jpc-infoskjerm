@@ -618,8 +618,7 @@ h1 {
 .menu-panel { background: rgba(10, 20, 30, 0.82); padding: 22px; }
 .menu-note { margin-bottom: 12px; font-size: 0.92rem; }
 
-.menu-item {
-  display: flex;
+.weekly-menu .menu-item {
   flex-direction: column;
   align-items: flex-start;
   padding: 14px 16px;
