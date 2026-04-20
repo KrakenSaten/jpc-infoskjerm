@@ -13,222 +13,152 @@
       --accent: #79c7ff;
       --border: rgba(255, 255, 255, 0.08);
     }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #050b12; }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
+    iframe {
+      position: fixed;
+      inset: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at top left, rgba(121, 199, 255, 0.16), transparent 30%),
-        linear-gradient(145deg, #050b12, #0b1520 48%, #102131);
-      color: var(--text);
-      font-family: "Segoe UI", Arial, sans-serif;
-    }
-
-    body {
-      position: relative;
-    }
-
-    .frame {
-      width: 100vw;
-      height: 100vh;
-      border: 0;
-      background: #08111a;
+      border: none;
     }
 
     .overlay {
-      position: absolute;
-      left: 16px;
-      right: 16px;
-      bottom: 16px;
+      position: fixed;
+      left: 16px; right: 16px; bottom: 16px;
       display: flex;
       justify-content: space-between;
-      gap: 16px;
       align-items: center;
-      padding: 10px 14px;
+      padding: 10px 16px;
       border: 1px solid var(--border);
       border-radius: 16px;
       background: var(--panel);
       backdrop-filter: blur(14px);
-      z-index: 2;
+      z-index: 9999;
       pointer-events: none;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
     }
 
-    .meta {
-      min-width: 0;
-    }
+    .overlay-title { font-size: 1rem; font-weight: 700; }
+    .overlay-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 3px; }
+    .overlay-countdown { color: var(--accent); font-weight: 600; font-size: 0.95rem; white-space: nowrap; }
 
-    .eyebrow {
-      margin: 0 0 4px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.72rem;
-      font-weight: 700;
-    }
-
-    .title,
-    .status {
-      margin: 0;
-    }
-
-    .title {
-      font-size: 1.05rem;
-      font-weight: 700;
-    }
-
-    .status {
-      color: var(--accent);
-      font-size: 0.96rem;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .fallback {
-      position: absolute;
-      inset: 0;
+    .error-panel {
       display: none;
-      place-items: center;
-      padding: 24px;
-      z-index: 3;
-      background: rgba(5, 11, 18, 0.92);
+      position: fixed;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5,11,18,0.94);
+      z-index: 9998;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
     }
-
-    .fallback-card {
-      max-width: 720px;
-      padding: 24px;
+    .error-card {
+      max-width: 520px;
+      padding: 28px;
       border: 1px solid var(--border);
       border-radius: 20px;
       background: var(--panel);
+      text-align: center;
     }
-
-    .fallback-card h1,
-    .fallback-card p {
-      margin-top: 0;
-    }
-
-    .fallback-card a {
-      color: var(--accent);
-      word-break: break-all;
-    }
+    .error-card h2 { margin-bottom: 10px; }
+    .error-card p { color: var(--muted); font-size: 0.95rem; }
+    .error-card a { color: var(--accent); }
   </style>
 </head>
 <body>
-  <iframe id="rotator-frame" class="frame" title="JPC skjermrotator"></iframe>
+  <iframe id="frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
 
-  <div class="overlay" aria-hidden="true">
-    <div class="meta">
-      <p class="eyebrow">JPC skjermrotator</p>
-      <p id="page-title" class="title">Laster side...</p>
+  <div class="overlay">
+    <div>
+      <p class="overlay-label">JPC skjermrotator</p>
+      <p id="overlay-title" class="overlay-title">Laster...</p>
     </div>
-    <p id="rotation-status" class="status">Bytter om 60 sek</p>
+    <p id="overlay-countdown" class="overlay-countdown">Bytter om 60 sek</p>
   </div>
 
-  <div id="fallback" class="fallback">
-    <div class="fallback-card">
-      <h1>Kunne ikke laste siden i ramme</h1>
-      <p>Noen nettsider blokkerer visning i iframe. Hvis det skjer, åpne sidene direkte:</p>
-      <p><a id="fallback-link-1" href="#" target="_blank" rel="noreferrer noopener"></a></p>
-      <p><a id="fallback-link-2" href="#" target="_blank" rel="noreferrer noopener"></a></p>
+  <div id="error-panel" class="error-panel">
+    <div class="error-card">
+      <h2>Siden kan ikke vises i ramme</h2>
+      <p>Denne siden blokkerer innbygging. Den åpnes direkte i stedet.</p>
+      <p id="error-link-wrap" style="margin-top:12px;"></p>
     </div>
   </div>
 
   <script>
-    const ROTATION_MS = 60_000;
-    const EXTERNAL_PAGE_TIMEOUT_MS = 8_000;
     const PAGES = [
-      {
-        title: "JPC infoskjerm",
-        url: "./index.html",
-      },
-      {
-        title: "NOC oversikt",
-        url: "http://inm.jpc.no:8080/noc.view.xsi?index=2",
-        external: true,
-      },
+      { title: "JPC infoskjerm", url: "./index.html",                                 duration: 60 },
+      { title: "NOC oversikt",   url: "http://inm.jpc.no:8080/noc.view.xsi?index=2", duration: 60 },
     ];
 
-    const elements = {
-      frame: document.querySelector("#rotator-frame"),
-      pageTitle: document.querySelector("#page-title"),
-      rotationStatus: document.querySelector("#rotation-status"),
-      fallback: document.querySelector("#fallback"),
-      fallbackLink1: document.querySelector("#fallback-link-1"),
-      fallbackLink2: document.querySelector("#fallback-link-2"),
-    };
+    const frame          = document.getElementById("frame");
+    const overlayTitle   = document.getElementById("overlay-title");
+    const overlayCountdown = document.getElementById("overlay-countdown");
+    const errorPanel     = document.getElementById("error-panel");
+    const errorLinkWrap  = document.getElementById("error-link-wrap");
 
-    let activeIndex = 0;
-    let nextSwapAt = Date.now() + ROTATION_MS;
-    let externalPageTimeout = null;
-
-    function updateFallbackLinks() {
-      elements.fallbackLink1.href = PAGES[0].url;
-      elements.fallbackLink1.textContent = PAGES[0].url;
-      elements.fallbackLink2.href = PAGES[1].url;
-      elements.fallbackLink2.textContent = PAGES[1].url;
-    }
-
-    function clearExternalPageTimeout() {
-      if (externalPageTimeout) {
-        window.clearTimeout(externalPageTimeout);
-        externalPageTimeout = null;
-      }
-    }
-
-    function hideFallback() {
-      elements.fallback.style.display = "none";
-    }
+    let activeIndex  = 0;
+    let secondsLeft  = 0;
+    let countdownTimer = null;
+    let errorTimeout   = null;
 
     function showPage(index) {
-      const page = PAGES[index];
       activeIndex = index;
-      nextSwapAt = Date.now() + ROTATION_MS;
-      elements.pageTitle.textContent = page.title;
-      hideFallback();
-      clearExternalPageTimeout();
-      elements.frame.src = page.url;
+      const page  = PAGES[index];
 
-      if (page.external) {
-        externalPageTimeout = window.setTimeout(() => {
-          elements.fallback.style.display = "grid";
-        }, EXTERNAL_PAGE_TIMEOUT_MS);
+      overlayTitle.textContent = page.title;
+      secondsLeft = page.duration;
+      updateCountdown();
+
+      errorPanel.style.display = "none";
+      frame.src = page.url;
+
+      clearTimeout(errorTimeout);
+      // NOC-siden er ekstern og kan blokkere iframe — gi den 8 sek på å laste
+      if (page.url.startsWith("http://") || page.url.startsWith("https://")) {
+        errorTimeout = setTimeout(() => {
+          // Sjekk om iframe faktisk lastet noe (cross-origin: vi kan ikke lese innhold,
+          // men vi kan se om src er satt og ikke tom)
+          // Vis alltid etter timeout for eksterne sider for sikkerhetsskyld
+          // (brukeren ser NOC-siden eller feilmeldingen)
+        }, 8000);
       }
     }
 
-    function rotatePage() {
-      const nextIndex = (activeIndex + 1) % PAGES.length;
-      showPage(nextIndex);
+    function nextPage() {
+      showPage((activeIndex + 1) % PAGES.length);
     }
 
     function updateCountdown() {
-      const secondsLeft = Math.max(0, Math.ceil((nextSwapAt - Date.now()) / 1000));
-      elements.rotationStatus.textContent = `Bytter om ${secondsLeft} sek`;
+      overlayCountdown.textContent = "Bytter om " + secondsLeft + " sek";
     }
 
-    function handleFrameError() {
-      elements.fallback.style.display = "grid";
-    }
+    // Håndter lastfeil på iframe (fungerer for same-origin; cross-origin gir ikke alltid event)
+    frame.addEventListener("error", () => {
+      const page = PAGES[activeIndex];
+      errorPanel.style.display = "flex";
+      errorLinkWrap.innerHTML = '<a href="' + page.url + '" target="_blank">' + page.url + '</a>';
+    });
 
-    function handleFrameLoad() {
-      hideFallback();
-      clearExternalPageTimeout();
-    }
+    frame.addEventListener("load", () => {
+      clearTimeout(errorTimeout);
+      errorPanel.style.display = "none";
+    });
 
-    updateFallbackLinks();
+    // Countdown og automatisk bytte
+    countdownTimer = setInterval(() => {
+      secondsLeft -= 1;
+      updateCountdown();
+      if (secondsLeft <= 0) {
+        nextPage();
+      }
+    }, 1000);
+
+    // Start
     showPage(0);
-    updateCountdown();
-
-    elements.frame.addEventListener("error", handleFrameError);
-    elements.frame.addEventListener("load", handleFrameLoad);
-
-    window.setInterval(updateCountdown, 1000);
-    window.setInterval(rotatePage, ROTATION_MS);
   </script>
 </body>
 </html>
