@@ -16,7 +16,6 @@
   --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.2);
 }
 
-/* Dag-tema: litt lysere og varmere */
 html.theme-day {
   --bg: #0d1825;
   --panel: rgba(15, 26, 40, 0.78);
@@ -24,7 +23,6 @@ html.theme-day {
   --panel-bright: rgba(22, 38, 56, 0.94);
 }
 
-/* Natt-tema: dypere bakgrunn for mindre blending */
 html.theme-night {
   --bg: #060d15;
   --panel: rgba(6, 13, 21, 0.82);
@@ -32,7 +30,6 @@ html.theme-night {
 }
 
 * { box-sizing: border-box; }
-
 html { color-scheme: dark; }
 
 body {
@@ -65,25 +62,16 @@ body::before {
   padding: 28px 0 40px;
 }
 
-.hero-panel,
-.panel,
-.clock-card,
-.departure-card,
-.menu-item,
-.departure-group,
-.news-item {
+.hero-panel, .panel, .clock-card, .departure-card,
+.menu-item, .departure-group, .news-item {
   backdrop-filter: blur(18px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
 }
 
-.hero-panel {
-  display: block;
-  margin-bottom: 14px;
-}
+.hero-panel { display: block; margin-bottom: 14px; }
 
-.hero-panel > div,
-.panel {
+.hero-panel > div, .panel {
   background: var(--panel);
   border-radius: 28px;
   padding: 28px;
@@ -98,15 +86,8 @@ body::before {
   box-shadow: var(--shadow);
 }
 
-.eyebrow,
-.menu-day,
-.status-text,
-.departure-platform,
-.clock-week,
-.clock-date,
-.muted {
-  color: var(--muted);
-}
+.eyebrow, .menu-day, .status-text, .departure-platform,
+.clock-week, .clock-date, .muted { color: var(--muted); }
 
 .eyebrow {
   margin: 0 0 6px;
@@ -120,7 +101,6 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 0.14em;
-  margin-bottom: 0;
   padding: 10px 16px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
@@ -142,16 +122,10 @@ body::before {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 0;
   flex-wrap: wrap;
 }
 
-.hero-brand-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
+.hero-brand-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .hero-summary {
   display: flex;
@@ -163,9 +137,8 @@ body::before {
   margin-right: 10px;
   align-self: center;
 }
-
 .hero-summary .eyebrow { margin-bottom: 4px; }
-.hero-summary .lead    { max-width: 100%; }
+.hero-summary .lead { max-width: 100%; }
 .hero-summary .system-status { margin-top: 3px; }
 
 .hero-right {
@@ -241,7 +214,6 @@ h1 {
   font-size: clamp(2.2rem, 5.2vw, 3.7rem);
   line-height: 0.88;
   margin-bottom: 0;
-  max-width: none;
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
@@ -254,8 +226,7 @@ h1 {
 }
 
 .system-status {
-  margin-bottom: 0;
-  margin-top: 4px;
+  margin: 4px 0 0;
   color: var(--sky);
   font-size: 0.86rem;
   font-weight: 500;
@@ -271,10 +242,7 @@ h1 {
   justify-content: center;
 }
 
-.clock-date, .clock-week {
-  margin-bottom: 8px;
-  font-weight: 500;
-}
+.clock-date, .clock-week { margin-bottom: 8px; font-weight: 500; }
 
 .clock-time {
   font-size: clamp(3.4rem, 10vw, 5.2rem);
@@ -290,10 +258,7 @@ h1 {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.hero-clock {
-  margin-left: 0;
-  margin-top: 0;
-}
+.hero-clock { margin: 0; }
 
 .panel-clock .clock-date,
 .panel-clock .clock-week {
@@ -313,20 +278,14 @@ h1 {
   align-items: start;
 }
 
-.lunch-column {
-  display: grid;
-  gap: 16px;
-}
+.lunch-column { display: grid; gap: 16px; }
 
 .highlight {
   background: linear-gradient(165deg, rgba(255, 209, 102, 0.13), rgba(18, 31, 46, 0.9));
   border-color: rgba(255, 209, 102, 0.18);
 }
 
-/* Stale-indikator paa paneler */
-.panel-stale {
-  position: relative;
-}
+.panel-stale { position: relative; }
 .panel-stale::after {
   content: "Lagret data";
   position: absolute;
@@ -344,14 +303,8 @@ h1 {
   z-index: 3;
 }
 
-.panel-header,
-.panel-meta,
-.departure-line,
-.departure-time-wrap,
-.menu-item {
-  display: flex;
-  align-items: center;
-}
+.panel-header, .panel-meta, .departure-line,
+.departure-time-wrap, .menu-item { display: flex; align-items: center; }
 
 .panel-header {
   justify-content: space-between;
@@ -365,17 +318,8 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-.panel-copy,
-.menu-note,
-.allergen-text {
-  color: var(--muted);
-}
-
-.panel-copy {
-  margin-bottom: 8px;
-  font-size: 1rem;
-  line-height: 1.5;
-}
+.panel-copy, .menu-note, .allergen-text { color: var(--muted); }
+.panel-copy { margin-bottom: 8px; font-size: 1rem; line-height: 1.5; }
 
 .departures-panel { padding: 14px; }
 .departures-panel .panel-copy { margin-bottom: 8px; }
@@ -388,10 +332,7 @@ h1 {
   align-items: center;
 }
 
-.live-pill,
-.day-chip,
-.menu-week-badge,
-.line-badge {
+.live-pill, .day-chip, .menu-week-badge, .line-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -406,11 +347,8 @@ h1 {
   background: linear-gradient(135deg, var(--green), #c4f6d8);
 }
 
-.departures-list,
-.weekly-menu,
-.weather-cards,
-.departure-group-list,
-.news-list {
+.departures-list, .weekly-menu, .weather-cards,
+.departure-group-list, .news-list {
   display: grid;
   gap: 14px;
 }
@@ -418,9 +356,7 @@ h1 {
 .departures-list { gap: 10px; }
 .departure-group-list { gap: 8px; }
 
-.departure-card,
-.menu-item,
-.weather-card {
+.departure-card, .menu-item, .weather-card {
   display: flex;
   background: var(--panel-strong);
   border-radius: 22px;
@@ -444,15 +380,13 @@ h1 {
   padding: 9px 12px;
 }
 
-.departure-group-header,
-.news-item {
+.departure-group-header, .news-item {
   display: flex;
   justify-content: space-between;
   gap: 12px;
 }
 
 .departure-group-header { margin-bottom: 4px; }
-
 .departure-group-header > div {
   display: flex;
   align-items: baseline;
@@ -460,8 +394,7 @@ h1 {
   flex-wrap: wrap;
 }
 
-.departure-group-title,
-.news-title {
+.departure-group-title, .news-title {
   font-size: 1.05rem;
   font-weight: 700;
   margin-bottom: 4px;
@@ -473,8 +406,7 @@ h1 {
   margin-bottom: 0;
 }
 
-.departure-group-subtitle,
-.news-source {
+.departure-group-subtitle, .news-source {
   margin-bottom: 0;
   color: var(--muted);
   font-size: 0.95rem;
@@ -487,10 +419,7 @@ h1 {
   padding: 22px;
 }
 
-.weather-cards {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
+.weather-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 .weather-graph-wrap {
   margin-top: 12px;
@@ -509,32 +438,23 @@ h1 {
   flex-wrap: wrap;
 }
 
-.weather-graph-title,
-.weather-graph-subtitle { margin-bottom: 0; }
-
+.weather-graph-title, .weather-graph-subtitle { margin-bottom: 0; }
 .weather-graph-title { font-size: 0.95rem; font-weight: 700; }
 .weather-graph-subtitle { color: var(--muted); font-size: 0.8rem; }
 
 .weather-graph { min-height: 164px; }
 .weather-graph svg { width: 100%; height: auto; display: block; }
 
-.weather-axis-label,
-.weather-hour-label,
-.weather-legend {
+.weather-axis-label, .weather-hour-label, .weather-legend {
   fill: #a7b5c5;
   font-family: "Space Grotesk", sans-serif;
 }
 
-.weather-axis-label,
-.weather-hour-label { font-size: 18px; }
+.weather-axis-label, .weather-hour-label { font-size: 18px; }
 .weather-legend { font-size: 15px; }
 
 .weather-card { display: grid; gap: 6px; padding: 16px 18px; }
-
-.weather-day,
-.weather-summary,
-.weather-temp,
-.weather-meta { margin-bottom: 0; }
+.weather-day, .weather-summary, .weather-temp, .weather-meta { margin-bottom: 0; }
 
 .weather-day {
   text-transform: uppercase;
@@ -547,11 +467,7 @@ h1 {
 .weather-temp { font-size: 3rem; font-weight: 700; color: var(--sky); }
 .weather-meta { color: var(--muted); font-size: 1.08rem; }
 
-.departure-line {
-  gap: 14px;
-  min-width: 0;
-  align-self: center;
-}
+.departure-line { gap: 14px; min-width: 0; align-self: center; }
 
 .line-badge {
   min-width: 42px;
@@ -563,22 +479,18 @@ h1 {
   box-shadow: 0 8px 18px rgba(229, 57, 53, 0.28);
 }
 
-.departure-destination,
-.menu-dish,
-.lunch-title {
+.departure-destination, .menu-dish, .lunch-title {
   font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
-.departure-destination,
-.menu-dish,
-.departure-platform,
-.allergen-text { overflow-wrap: anywhere; }
+.departure-destination, .menu-dish, .departure-platform, .allergen-text {
+  overflow-wrap: anywhere;
+}
 
 .departure-destination {
   font-size: 1.28rem;
-  font-weight: 700;
   margin-bottom: 0;
   line-height: 1.15;
 }
@@ -611,8 +523,7 @@ h1 {
 }
 
 .departure-status-badge {
-  margin-bottom: 0;
-  margin-top: 2px;
+  margin: 2px 0 0;
   padding: 4px 9px;
   border-radius: 999px;
   font-size: 0.8rem;
@@ -626,13 +537,7 @@ h1 {
   color: var(--accent);
 }
 
-.news-section {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.countdown-section {
+.news-section, .countdown-section {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -649,17 +554,8 @@ h1 {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.countdown-kicker,
-.countdown-subtitle {
-  margin-bottom: 0;
-  color: var(--muted);
-}
-
-.countdown-kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.78rem;
-}
+.countdown-kicker, .countdown-subtitle { margin-bottom: 0; color: var(--muted); }
+.countdown-kicker { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.78rem; }
 
 .countdown-display {
   margin: 10px 0 8px;
@@ -704,28 +600,20 @@ h1 {
   overflow: hidden;
 }
 
-.status-text {
-  margin-top: 16px;
-  margin-bottom: 0;
-  min-height: 1.4em;
-}
+.status-text { margin: 16px 0 0; min-height: 1.4em; }
 
 .lunch-panel { background: var(--panel-bright); padding: 22px; }
 .lunch-title { margin-bottom: 10px; font-size: 1.18rem; }
 .allergen-text { margin-bottom: 0; font-size: 1rem; }
 
-.day-chip,
-.menu-week-badge {
+.day-chip, .menu-week-badge {
   padding: 8px 14px;
   font-size: 0.9rem;
   background: rgba(255, 209, 102, 0.14);
   color: var(--accent);
 }
 
-.muted-chip {
-  background: rgba(121, 199, 255, 0.12);
-  color: var(--sky);
-}
+.muted-chip { background: rgba(121, 199, 255, 0.12); color: var(--sky); }
 
 .menu-panel { background: rgba(10, 20, 30, 0.82); padding: 22px; }
 .menu-note { margin-bottom: 12px; font-size: 0.92rem; }
@@ -737,10 +625,7 @@ h1 {
   border-radius: 18px;
 }
 
-.weekly-menu {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
+.weekly-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 .menu-day {
   text-transform: uppercase;
@@ -749,9 +634,7 @@ h1 {
   margin-bottom: 6px;
 }
 
-.menu-dish,
-.menu-allergens { margin-bottom: 0; }
-
+.menu-dish, .menu-allergens { margin-bottom: 0; }
 .menu-dish { font-size: 1.02rem; line-height: 1.28; }
 
 .menu-allergens {
@@ -763,9 +646,7 @@ h1 {
 }
 
 @media (max-width: 1080px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
+  .content-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {
@@ -774,21 +655,13 @@ h1 {
     padding: 16px 0 24px;
   }
 
-  .hero-panel > div,
-  .panel,
-  .clock-card,
-  .departure-card,
-  .menu-item,
-  .departure-group,
-  .news-item {
+  .hero-panel > div, .panel, .clock-card, .departure-card,
+  .menu-item, .departure-group, .news-item {
     border-radius: 22px;
     padding: 20px;
   }
 
-  .panel-header,
-  .menu-item,
-  .weather-card,
-  .news-item {
+  .panel-header, .menu-item, .weather-card, .news-item {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -800,8 +673,7 @@ h1 {
     gap: 12px;
   }
 
-  .panel-meta,
-  .departure-time-wrap {
+  .panel-meta, .departure-time-wrap {
     align-items: flex-start;
     text-align: left;
   }
@@ -813,25 +685,13 @@ h1 {
     margin-left: auto;
   }
 
-  .menu-allergens {
-    text-align: left;
-    max-width: none;
-  }
+  .menu-allergens { text-align: left; max-width: none; }
 
-  .weather-cards { grid-template-columns: 1fr; }
-  .weekly-menu   { grid-template-columns: 1fr; }
+  .weather-cards, .weekly-menu { grid-template-columns: 1fr; }
 
   .brand-lockup { padding: 10px 14px; }
 
-  .hero-title-row {
-    align-items: flex-start;
-    gap: 14px;
-  }
-
+  .hero-title-row { align-items: flex-start; gap: 14px; }
   .hero-brand-title { flex-wrap: wrap; }
-
-  .hero-right {
-    width: 100%;
-    justify-content: flex-end;
-  }
+  .hero-right { width: 100%; justify-content: flex-end; }
 }
