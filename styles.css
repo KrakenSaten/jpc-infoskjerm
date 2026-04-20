@@ -619,10 +619,16 @@ h1 {
 .menu-note { margin-bottom: 12px; font-size: 0.92rem; }
 
 .menu-item {
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
   padding: 14px 16px;
-  gap: 12px;
+  gap: 6px;
   border-radius: 18px;
+}
+
+.menu-item > div {
+  width: 100%;
 }
 
 .weekly-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -638,11 +644,11 @@ h1 {
 .menu-dish { font-size: 1.02rem; line-height: 1.28; }
 
 .menu-allergens {
-  max-width: 150px;
-  text-align: right;
+  width: 100%;
+  text-align: left;
   color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.25;
+  font-size: 0.82rem;
+  line-height: 1.3;
 }
 
 @media (max-width: 1080px) {
