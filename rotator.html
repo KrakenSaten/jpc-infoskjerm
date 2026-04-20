@@ -25,12 +25,12 @@
     }
     .card {
       text-align: center;
-      padding: 48px 56px;
+      padding: 48px 64px;
       border: 1px solid var(--border);
       border-radius: 28px;
       background: var(--panel);
       backdrop-filter: blur(18px);
-      min-width: 400px;
+      min-width: 420px;
     }
     .eyebrow {
       color: var(--muted);
@@ -38,25 +38,27 @@
       letter-spacing: 0.18em;
       font-size: 0.72rem;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .page-name {
-      font-size: 2rem;
+      font-size: 1.9rem;
       font-weight: 700;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       letter-spacing: -0.02em;
     }
     .countdown {
       color: var(--accent);
-      font-size: 3.5rem;
+      font-size: 4rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .countdown-label {
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
   </style>
 </head>
@@ -65,51 +67,97 @@
     <p class="eyebrow">JPC skjermrotator</p>
     <p id="page-name" class="page-name"></p>
     <p id="countdown" class="countdown"></p>
-    <p class="countdown-label">sekunder</p>
+    <p class="countdown-label">sekunder til bytte</p>
   </div>
 
   <script>
-    const PAGES = [
+    // Konfigurasjon — endre varighet her (sekunder)
+    var PAGES = [
       { title: "JPC infoskjerm", url: "./index.html",                                 duration: 60 },
       { title: "NOC oversikt",   url: "http://inm.jpc.no:8080/noc.view.xsi?index=2", duration: 60 },
     ];
 
-    // Hent hvilken side som skal vises nå fra URL-parameteren ?page=N
-    const params    = new URLSearchParams(window.location.search);
-    const pageIndex = parseInt(params.get("page") ?? "0", 10) % PAGES.length;
-    const page      = PAGES[pageIndex];
-    const nextIndex = (pageIndex + 1) % PAGES.length;
+    var STORAGE_KEY = "jpc_rotator_state";
+
+    // Les eller initialiser tilstand
+    function getState() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return null;
+    }
+
+    function setState(pageIndex, switchAt) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          pageIndex: pageIndex,
+          switchAt: switchAt
+        }));
+      } catch(e) {}
+    }
+
+    // Sjekk om vi kom tilbake fra en ekstern side (NOC)
+    // og om det allerede er tid for å bytte
+    var state = getState();
+    var now = Date.now();
+
+    var pageIndex;
+    var switchAt;
+
+    if (state && state.switchAt && now >= state.switchAt) {
+      // Tid for neste side
+      pageIndex = ((state.pageIndex || 0) + 1) % PAGES.length;
+      switchAt = now + PAGES[pageIndex].duration * 1000;
+      setState(pageIndex, switchAt);
+    } else if (state && state.switchAt && now < state.switchAt) {
+      // Vi kom tilbake for tidlig (f.eks. refresh) — fortsett der vi var
+      pageIndex = state.pageIndex || 0;
+      switchAt = state.switchAt;
+    } else {
+      // Første gang
+      pageIndex = 0;
+      switchAt = now + PAGES[pageIndex].duration * 1000;
+      setState(pageIndex, switchAt);
+    }
+
+    var page = PAGES[pageIndex];
+    var nextIndex = (pageIndex + 1) % PAGES.length;
 
     document.getElementById("page-name").textContent = page.title;
 
-    let secondsLeft = page.duration;
-    document.getElementById("countdown").textContent = secondsLeft;
+    // Countdown-visning
+    function updateCountdown() {
+      var secs = Math.max(0, Math.ceil((switchAt - Date.now()) / 1000));
+      document.getElementById("countdown").textContent = secs;
+    }
+    updateCountdown();
 
-    const timer = setInterval(() => {
-      secondsLeft -= 1;
-      document.getElementById("countdown").textContent = secondsLeft;
-      if (secondsLeft <= 0) {
+    var timer = setInterval(function() {
+      var secs = Math.ceil((switchAt - Date.now()) / 1000);
+      document.getElementById("countdown").textContent = Math.max(0, secs);
+      if (Date.now() >= switchAt) {
         clearInterval(timer);
-
-        if (pageIndex === 0) {
-          // Viser infoskjermen — legg til ?rotateBack=URL i index.html
-          // slik at den sender oss tilbake hit med neste page-index
-          const returnUrl = encodeURIComponent(
-            location.origin + location.pathname.replace("rotator.html", "") +
-            "rotator.html?page=" + nextIndex
-          );
-          window.location.href = "./index.html?rotateBack=" + returnUrl;
-        } else {
-          // Viser NOC — navigerer direkte dit. NOC har ingen rotator-logikk,
-          // så vi planlegger retur via sessionStorage som leses av rotator.html.
-          sessionStorage.setItem("rotator_return", JSON.stringify({
-            returnUrl: location.origin + location.pathname.replace("rotator.html","") + "rotator.html?page=" + nextIndex,
-            returnAt: Date.now() + page.duration * 1000
-          }));
-          window.location.href = page.url;
-        }
+        // Oppdater state til neste side
+        var ni = (pageIndex + 1) % PAGES.length;
+        setState(ni, Date.now() + PAGES[ni].duration * 1000);
+        // Naviger til siden
+        window.location.href = PAGES[ni].url === "./index.html"
+          ? "./index.html?rotateBack=" + encodeURIComponent("./rotator.html")
+          : PAGES[ni].url;
       }
-    }, 1000);
+    }, 500);
+
+    // Naviger til gjeldende side etter 3 sekunder
+    setTimeout(function() {
+      if (page.url === "./index.html") {
+        window.location.href = "./index.html?rotateBack=" + encodeURIComponent("./rotator.html");
+      } else {
+        // Ekstern side (NOC) — vi navigerer dit, og localStorage husker
+        // at vi skal tilbake til rotatoren når vi returnerer
+        window.location.href = page.url;
+      }
+    }, 3000);
   </script>
 </body>
 </html>
