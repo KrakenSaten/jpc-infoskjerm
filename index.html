@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kontorinfo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="dashboard">
+    <section class="hero-panel">
+      <div>
+        <div class="hero-title-row">
+          <div class="hero-brand-title">
+            <div class="brand-lockup" aria-label="JPC">
+              <span class="brand-letter">J</span>
+              <span class="brand-letter">P</span>
+              <span class="brand-letter">C</span>
+            </div>
+            <h1>Skullerud live</h1>
+          </div>
+          <div class="hero-summary">
+            <p class="eyebrow">Intern infoskjerm</p>
+            <p class="lead">
+              Sanntid fra T-banen og dagens lunsj samlet p&aring; ett sted.
+            </p>
+            <p id="system-status" class="system-status">Laster data...</p>
+          </div>
+          <div class="clock-card panel-clock hero-clock">
+            <p id="current-date" class="clock-date">Onsdag 18. mars</p>
+            <p id="current-time" class="clock-time">10:52</p>
+            <p id="week-label" class="clock-week">Uke 12</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel departures-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Sanntid</p>
+            <h2>Skullerud T-bane</h2>
+          </div>
+          <div class="panel-meta">
+            <span class="live-pill">Live</span>
+            <span id="departures-updated" class="muted">Oppdaterer...</span>
+          </div>
+        </div>
+
+        <p class="panel-copy">
+          Neste avganger fra Skullerud gruppert per retning. Listen oppdateres automatisk.
+        </p>
+
+        <div id="departures-list" class="departures-list" aria-live="polite"></div>
+        <p id="departures-status" class="status-text"></p>
+
+        <section class="news-section" aria-labelledby="news-heading">
+          <div class="panel-header news-header">
+            <div>
+              <p class="eyebrow">Nyheter</p>
+              <h3 id="news-heading">Siste fra NRK</h3>
+            </div>
+            <span id="news-updated" class="muted">Oppdaterer...</span>
+          </div>
+
+          <div id="news-list" class="news-list" aria-live="polite"></div>
+          <p id="news-status" class="status-text"></p>
+        </section>
+
+        <section class="countdown-section" aria-labelledby="countdown-heading">
+          <div class="panel-header countdown-header">
+            <div>
+              <p class="eyebrow">Jubileum</p>
+              <h3 id="countdown-heading">30 &aring;rs jubileum</h3>
+            </div>
+          </div>
+
+          <article class="countdown-card">
+            <p class="countdown-kicker">JPC AS &middot; Tur til Brussel</p>
+            <p id="countdown-display" class="countdown-display">42 dager 07 timer 15 min</p>
+            <p id="countdown-subtitle" class="countdown-subtitle">Avreise 30. april kl. 15:00</p>
+          </article>
+        </section>
+      </article>
+
+      <section class="lunch-column">
+        <article class="panel weather-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">V&aelig;r</p>
+              <h2>Skullerud</h2>
+            </div>
+            <span id="weather-updated" class="muted">Oppdaterer...</span>
+          </div>
+
+          <div id="weather-cards" class="weather-cards" aria-live="polite"></div>
+          <div class="weather-graph-wrap">
+            <div class="weather-graph-header">
+              <p class="weather-graph-title">Time for time</p>
+              <p class="weather-graph-subtitle">Kompakt graf i Yr-stil for neste 24 timer</p>
+            </div>
+            <div id="weather-graph" class="weather-graph" aria-live="polite"></div>
+          </div>
+          <p id="weather-status" class="status-text"></p>
+        </article>
+
+        <article class="panel lunch-panel highlight">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Lunsj</p>
+              <h2>I dag</h2>
+            </div>
+            <span id="today-day-label" class="day-chip">Onsdag</span>
+          </div>
+
+          <h3 id="today-lunch-title" class="lunch-title"></h3>
+          <p id="today-lunch-allergens" class="allergen-text"></p>
+        </article>
+
+        <article class="panel lunch-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Lunsj</p>
+              <h2>I morgen</h2>
+            </div>
+            <span id="tomorrow-day-label" class="day-chip muted-chip">Torsdag</span>
+          </div>
+
+          <h3 id="tomorrow-lunch-title" class="lunch-title"></h3>
+          <p id="tomorrow-lunch-allergens" class="allergen-text"></p>
+        </article>
+
+        <article class="panel menu-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Oversikt</p>
+              <h2>Ukemeny</h2>
+            </div>
+            <span id="menu-week-badge" class="menu-week-badge">Uke 12</span>
+          </div>
+
+          <div id="menu-note" class="menu-note"></div>
+          <div id="weekly-menu" class="weekly-menu"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <template id="departure-template">
+    <article class="departure-card">
+      <div class="departure-line">
+        <span class="line-badge"></span>
+        <div>
+          <p class="departure-destination"></p>
+          <p class="departure-platform"></p>
+        </div>
+      </div>
+      <div class="departure-time-wrap">
+        <p class="departure-time"></p>
+        <p class="departure-countdown"></p>
+        <p class="departure-status-badge"></p>
+      </div>
+    </article>
+  </template>
+
+  <template id="departure-group-template">
+    <section class="departure-group">
+      <div class="departure-group-header">
+        <div>
+          <p class="departure-group-title"></p>
+          <p class="departure-group-subtitle"></p>
+        </div>
+      </div>
+      <div class="departure-group-list"></div>
+    </section>
+  </template>
+
+  <template id="menu-item-template">
+    <article class="menu-item">
+      <div>
+        <p class="menu-day"></p>
+        <p class="menu-dish"></p>
+      </div>
+      <p class="menu-allergens"></p>
+    </article>
+  </template>
+
+  <template id="weather-card-template">
+    <article class="weather-card">
+      <p class="weather-day"></p>
+      <p class="weather-summary"></p>
+      <p class="weather-temp"></p>
+      <p class="weather-meta"></p>
+    </article>
+  </template>
+
+  <template id="news-item-template">
+    <a class="news-item" target="_blank" rel="noreferrer noopener">
+      <p class="news-source"></p>
+      <p class="news-title"></p>
+    </a>
+  </template>
+
+  <script src="menu.js"></script>
+  <script src="config.js"></script>
+  <script src="menu-loader.js"></script>
+  <script src="renderers.js"></script>
+  <script src="services.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

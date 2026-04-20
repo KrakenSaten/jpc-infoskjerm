@@ -1,0 +1,35 @@
+window.JPC_MENU = {
+  weekNumber: 17,
+  days: [
+    {
+      dayIndex: 1,
+      dayLabel: "Mandag",
+      title: "Tikka masala med raita, ris og koriander",
+      allergens: "Allergier: Melk, hvete",
+    },
+    {
+      dayIndex: 2,
+      dayLabel: "Tirsdag",
+      title: "Lange med tomat- og olivensaus, poteter og dill",
+      allergens: "Allergier: Fisk",
+    },
+    {
+      dayIndex: 3,
+      dayLabel: "Onsdag",
+      title: "Kyllingfrikass\u00e9 med poteter, persille og pepperrot",
+      allergens: "Allergier: Melk",
+    },
+    {
+      dayIndex: 4,
+      dayLabel: "Torsdag",
+      title: "Tortilla de patatas med tomatsalat, urtedressing og parmesan",
+      allergens: "Allergier: Egg, melk",
+    },
+    {
+      dayIndex: 5,
+      dayLabel: "Fredag",
+      title: "Mac & cheese med bacon og gressl\u00f8k",
+      allergens: "Allergier: Melk, hvete",
+    },
+  ],
+};
