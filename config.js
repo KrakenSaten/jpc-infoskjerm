@@ -1,15 +1,16 @@
 (function initConfig() {
   // Hvor henter vi menyen fra?
-  // 1. GitHub (alltid oppdatert) — denne er primærkilden
-  // 2. Lokal menu.csv — hvis GitHub ikke er tilgjengelig
-  // 3. Lokal menu.json — siste fallback
+  // 1. GitHub (alltid oppdatert) - denne er primaerkilden
+  // 2. Lokal menu.csv - hvis GitHub ikke er tilgjengelig
+  // 3. Lokal menu.json - siste fallback
   //
   // Fallback-menyen i koden er bevisst fjernet: hvis ingen kilde har meny
   // for gjeldende uke, skal skjermen vise en tydelig feilmelding i stedet
-  // for å lyve om hva som serveres.
+  // for aa lyve om hva som serveres.
 
   const MENU_GITHUB_URL = "https://raw.githubusercontent.com/KrakenSaten/jpc-infoskjerm/main/menu.csv";
 
+  window.JPC_CONFIG = Object.freeze({
     stopId: "NSR:StopPlace:58227",
     coords: Object.freeze({
       latitude: 59.866685,
