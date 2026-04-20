@@ -7,85 +7,65 @@
   <style>
     :root {
       --bg: #050b12;
-      --panel: rgba(10, 18, 28, 0.88);
+      --panel: rgba(10, 18, 28, 0.92);
       --text: #f5f1e8;
       --muted: #a7b5c5;
       --accent: #79c7ff;
       --border: rgba(255, 255, 255, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #050b12; }
-
-    iframe {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .overlay {
-      position: fixed;
-      left: 16px; right: 16px; bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: var(--panel);
-      backdrop-filter: blur(14px);
-      z-index: 9999;
-      pointer-events: none;
-      font-family: "Segoe UI", Arial, sans-serif;
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background:
+        radial-gradient(circle at top left, rgba(121,199,255,0.16), transparent 30%),
+        linear-gradient(145deg, #050b12, #0b1520 48%, #102131);
       color: var(--text);
-    }
-
-    .overlay-title { font-size: 1rem; font-weight: 700; }
-    .overlay-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 3px; }
-    .overlay-countdown { color: var(--accent); font-weight: 600; font-size: 0.95rem; white-space: nowrap; }
-
-    .error-panel {
-      display: none;
-      position: fixed;
-      inset: 0;
-      align-items: center;
-      justify-content: center;
-      background: rgba(5,11,18,0.94);
-      z-index: 9998;
       font-family: "Segoe UI", Arial, sans-serif;
-      color: var(--text);
+      display: flex; align-items: center; justify-content: center;
     }
-    .error-card {
-      max-width: 520px;
-      padding: 28px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--panel);
+    .card {
       text-align: center;
+      padding: 48px 56px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      min-width: 400px;
     }
-    .error-card h2 { margin-bottom: 10px; }
-    .error-card p { color: var(--muted); font-size: 0.95rem; }
-    .error-card a { color: var(--accent); }
+    .eyebrow {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .page-name {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+    .countdown {
+      color: var(--accent);
+      font-size: 3.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .countdown-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
-  <iframe id="frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
-
-  <div class="overlay">
-    <div>
-      <p class="overlay-label">JPC skjermrotator</p>
-      <p id="overlay-title" class="overlay-title">Laster...</p>
-    </div>
-    <p id="overlay-countdown" class="overlay-countdown">Bytter om 60 sek</p>
-  </div>
-
-  <div id="error-panel" class="error-panel">
-    <div class="error-card">
-      <h2>Siden kan ikke vises i ramme</h2>
-      <p>Denne siden blokkerer innbygging. Den åpnes direkte i stedet.</p>
-      <p id="error-link-wrap" style="margin-top:12px;"></p>
-    </div>
+  <div class="card">
+    <p class="eyebrow">JPC skjermrotator</p>
+    <p id="page-name" class="page-name"></p>
+    <p id="countdown" class="countdown"></p>
+    <p class="countdown-label">sekunder</p>
   </div>
 
   <script>
@@ -94,71 +74,42 @@
       { title: "NOC oversikt",   url: "http://inm.jpc.no:8080/noc.view.xsi?index=2", duration: 60 },
     ];
 
-    const frame          = document.getElementById("frame");
-    const overlayTitle   = document.getElementById("overlay-title");
-    const overlayCountdown = document.getElementById("overlay-countdown");
-    const errorPanel     = document.getElementById("error-panel");
-    const errorLinkWrap  = document.getElementById("error-link-wrap");
+    // Hent hvilken side som skal vises nå fra URL-parameteren ?page=N
+    const params    = new URLSearchParams(window.location.search);
+    const pageIndex = parseInt(params.get("page") ?? "0", 10) % PAGES.length;
+    const page      = PAGES[pageIndex];
+    const nextIndex = (pageIndex + 1) % PAGES.length;
 
-    let activeIndex  = 0;
-    let secondsLeft  = 0;
-    let countdownTimer = null;
-    let errorTimeout   = null;
+    document.getElementById("page-name").textContent = page.title;
 
-    function showPage(index) {
-      activeIndex = index;
-      const page  = PAGES[index];
+    let secondsLeft = page.duration;
+    document.getElementById("countdown").textContent = secondsLeft;
 
-      overlayTitle.textContent = page.title;
-      secondsLeft = page.duration;
-      updateCountdown();
-
-      errorPanel.style.display = "none";
-      frame.src = page.url;
-
-      clearTimeout(errorTimeout);
-      // NOC-siden er ekstern og kan blokkere iframe — gi den 8 sek på å laste
-      if (page.url.startsWith("http://") || page.url.startsWith("https://")) {
-        errorTimeout = setTimeout(() => {
-          // Sjekk om iframe faktisk lastet noe (cross-origin: vi kan ikke lese innhold,
-          // men vi kan se om src er satt og ikke tom)
-          // Vis alltid etter timeout for eksterne sider for sikkerhetsskyld
-          // (brukeren ser NOC-siden eller feilmeldingen)
-        }, 8000);
-      }
-    }
-
-    function nextPage() {
-      showPage((activeIndex + 1) % PAGES.length);
-    }
-
-    function updateCountdown() {
-      overlayCountdown.textContent = "Bytter om " + secondsLeft + " sek";
-    }
-
-    // Håndter lastfeil på iframe (fungerer for same-origin; cross-origin gir ikke alltid event)
-    frame.addEventListener("error", () => {
-      const page = PAGES[activeIndex];
-      errorPanel.style.display = "flex";
-      errorLinkWrap.innerHTML = '<a href="' + page.url + '" target="_blank">' + page.url + '</a>';
-    });
-
-    frame.addEventListener("load", () => {
-      clearTimeout(errorTimeout);
-      errorPanel.style.display = "none";
-    });
-
-    // Countdown og automatisk bytte
-    countdownTimer = setInterval(() => {
+    const timer = setInterval(() => {
       secondsLeft -= 1;
-      updateCountdown();
+      document.getElementById("countdown").textContent = secondsLeft;
       if (secondsLeft <= 0) {
-        nextPage();
+        clearInterval(timer);
+
+        if (pageIndex === 0) {
+          // Viser infoskjermen — legg til ?rotateBack=URL i index.html
+          // slik at den sender oss tilbake hit med neste page-index
+          const returnUrl = encodeURIComponent(
+            location.origin + location.pathname.replace("rotator.html", "") +
+            "rotator.html?page=" + nextIndex
+          );
+          window.location.href = "./index.html?rotateBack=" + returnUrl;
+        } else {
+          // Viser NOC — navigerer direkte dit. NOC har ingen rotator-logikk,
+          // så vi planlegger retur via sessionStorage som leses av rotator.html.
+          sessionStorage.setItem("rotator_return", JSON.stringify({
+            returnUrl: location.origin + location.pathname.replace("rotator.html","") + "rotator.html?page=" + nextIndex,
+            returnAt: Date.now() + page.duration * 1000
+          }));
+          window.location.href = page.url;
+        }
       }
     }, 1000);
-
-    // Start
-    showPage(0);
   </script>
 </body>
 </html>
