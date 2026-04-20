@@ -1,44 +1,59 @@
-# Infoskjerm
+# JPC Infoskjerm
 
-En enkel infoskjerm for kontoret med disse panelene:
+En enkel infoskjerm for JPC-kontoret på Skullerud. Hostes via GitHub Pages og vises på kontorskjerm.
 
-- sanntidsavganger fra Skullerud T-bane via Entur
-- vaerprognose via Open-Meteo
-- siste nyheter fra NRK RSS
-- lokal lunsjmeny fra `menu.csv` eller `menu.json`
-- skjermrotator i `rotator.html`
+**Live URL:** https://krakensaten.github.io/jpc-infoskjerm/
+
+## Paneler
+
+- Sanntidsavganger fra Skullerud T-bane (Entur API)
+- Værprognose for Skullerud (Open-Meteo, time-for-time-graf starter fra nå)
+- Siste nyheter fra NRK RSS
+- Ukens lunsjmeny fra `menu.csv` (hentes automatisk fra GitHub)
+- Nedtelling til jubileumstur til Brussel
+- Anledning-banner (kakefredag, merkedager)
+- Fullskjerm-knapp og hurtigtaster
 
 ## Filer
 
-- `index.html`: hovedsiden for infoskjermen
-- `config.js`: felles konfigurasjon og standardverdier
-- `app.js`: oppstart, state og orkestrering
-- `menu-loader.js`: laster og normaliserer lunsj fra CSV eller JSON
-- `renderers.js`: visningslogikk for klokke, lunsj, vaer og nyheter
-- `services.js`: henting og normalisering av eksterne data
-- `styles.css`: visuell utforming
-- `menu.csv`: enkleste fil aa oppdatere for ukens lunsj
-- `menu.json`: ukens lunsjmeny som er lettest aa oppdatere
-- `menu.js`: lokal fallback hvis `menu.json` ikke kan lastes
-- `rotator.html`: roterer mellom infoskjermen og NOC-visning
-- `start-rotator.bat`: aapner rotatoren i nettleser
-- `start-preview.bat`: starter lokal preview paa `http://localhost:8181/index.html`
-- `start-rotator-preview.bat`: starter lokal preview av rotatoren
-- `preview-server.ps1`: enkel lokal filserver for prosjektet
-- `TEAM-WORKFLOW.md`: kort guide for hvordan teamet jobber trygt i denne mappa
-- `QA-CHECKLIST.md`: manuell testliste som kan kjoeres etter endringer
+### Kjørende kode
+- `index.html` – hovedsiden
+- `config.js` – konfigurasjon og endepunkter
+- `app.js` – oppstart, tilstand og orkestrering
+- `menu-loader.js` – henter meny fra GitHub / lokal CSV / JSON
+- `renderers.js` – visningslogikk for paneler, anledninger og tema
+- `services.js` – henter data fra eksterne API-er med retry
+- `styles.css` – visuell utforming
 
-## Vanlige endringer
+### Data
+- `menu.csv` – ukens lunsjmeny (primærkilde, hentes fra GitHub)
+- `menu.json` – siste reserveløsning hvis CSV ikke kan leses
 
-- Oppdater lunsj ved aa redigere `menu.csv`. Det er na den foretrukne fila for raske endringer.
-- `menu.json` fungerer fortsatt som fallback hvis `menu.csv` ikke finnes eller er ugyldig.
-- Hvis baade `menu.csv` og `menu.json` feiler ved lasting, brukes fallback-dataene i `menu.js`.
-- Endringer i API-visningene styres hovedsakelig fra `app.js`.
+### Rotator og lokal testing
+- `rotator.html` – bytter mellom infoskjerm og NOC-visning (iframe-basert, bruk lokalt)
+- `start-preview.bat` – lokal preview av infoskjermen
+- `start-rotator-preview.bat` – lokal preview av rotatoren
+- `start-rotator.bat` – åpner rotatoren i nettleser
+- `preview-server.ps1` – enkel lokal filserver
+
+### Dokumentasjon
+- `TEAM-WORKFLOW.md` – hvordan teamet jobber med prosjektet
+- `QA-CHECKLIST.md` – manuell testliste etter endringer
+
+## Oppdater lunsjmenyen
+
+Endre `menu.csv` direkte på GitHub. Infoskjermen henter ny meny innen en time (eller med en gang hvis du trykker `R`).
+
+Hvis menyen ikke har data for gjeldende ISO-uke, viser skjermen en tydelig feilmelding i stedet for utdatert data.
+
+## Hurtigtaster
+
+- `R` – oppdater alle paneler umiddelbart
+- `F` – veksle fullskjerm
 
 ## Drift
 
 - Siden lagrer sist vellykkede data i `localStorage` som fallback ved nettverksfeil.
-- Rotatoren viser `http://inm.jpc.no:8080/noc.view.xsi?index=2` og lokal infoskjerm annenhver gang.
-- For lokal testing kan teamet bruke `start-preview.bat` eller `start-rotator-preview.bat` i stedet for aa aapne HTML-filene direkte.
-- Se `TEAM-WORKFLOW.md` for anbefalt arbeidsflyt i delt mappe.
-- Bruk `QA-CHECKLIST.md` etter endringer foer skjermen tas i bruk.
+- Paneler som viser lagret data får en "Lagret data"-indikator.
+- Grafisk tema (dag/natt) veksler automatisk basert på klokkeslett.
+- Rotatoren kjøres lokalt på kontorskjermen, ikke via GitHub Pages.
