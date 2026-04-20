@@ -16,10 +16,7 @@
 
   function normalizeWeatherGraphCopy(elements) {
     const svg = elements.weatherGraph?.querySelector("svg");
-    const legends = elements.weatherGraph?.querySelectorAll(".weather-legend");
     if (svg) svg.setAttribute("aria-label", "V\u00e6rgraf for de neste 24 timene");
-    if (legends?.[0]) legends[0].textContent = "Temperatur";
-    if (legends?.[1]) legends[1].textContent = "Nedb\u00f8r";
   }
 
   function formatClock(elements) {
@@ -257,8 +254,6 @@
       guideLines + weatherIcons + precipBars +
       '<path d="' + linePath(temps) + '" fill="none" stroke="url(#tempLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />' +
       hourLabels + tempLabels +
-      '<text class="weather-legend" x="' + padding.left + '" y="' + (height - 2) + '">Temperatur</text>' +
-      '<text class="weather-legend" x="' + (padding.left + 96) + '" y="' + (height - 2) + '">Nedb\u00f8r</text>' +
       '</svg>';
   }
 
