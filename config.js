@@ -1,41 +1,15 @@
 (function initConfig() {
-  const defaultMenu = window.JPC_MENU || {
-    weekNumber: 13,
-    days: [
-      {
-        dayIndex: 1,
-        dayLabel: "Mandag",
-        title: "Indisk kylling curry med ris, raita og koriander",
-        allergens: "Allergier: Melk, hvete",
-      },
-      {
-        dayIndex: 2,
-        dayLabel: "Tirsdag",
-        title: "Svine sm\u00f8rbr\u00f8d med hjertesalat, peppermajones, syltet r\u00f8dl\u00f8k og karse",
-        allergens: "Allergier: Egg, hvete, sulfitt",
-      },
-      {
-        dayIndex: 3,
-        dayLabel: "Onsdag",
-        title: "Spicy kylling og tomat pasta",
-        allergens: "Allergier: Hvete, melk",
-      },
-      {
-        dayIndex: 4,
-        dayLabel: "Torsdag",
-        title: "Laks med urtemajones, fennikel og k\u00e5lsalat",
-        allergens: "Allergier: Fisk, egg",
-      },
-      {
-        dayIndex: 5,
-        dayLabel: "Fredag",
-        title: "Taco med tilbeh\u00f8r",
-        allergens: "Allergier: Hvete, melk",
-      },
-    ],
-  };
+  // Hvor henter vi menyen fra?
+  // 1. GitHub (alltid oppdatert) — denne er primærkilden
+  // 2. Lokal menu.csv — hvis GitHub ikke er tilgjengelig
+  // 3. Lokal menu.json — siste fallback
+  //
+  // Fallback-menyen i koden er bevisst fjernet: hvis ingen kilde har meny
+  // for gjeldende uke, skal skjermen vise en tydelig feilmelding i stedet
+  // for å lyve om hva som serveres.
 
-  window.JPC_CONFIG = Object.freeze({
+  const MENU_GITHUB_URL = "https://raw.githubusercontent.com/KrakenSaten/jpc-infoskjerm/main/menu.csv";
+
     stopId: "NSR:StopPlace:58227",
     coords: Object.freeze({
       latitude: 59.866685,
@@ -46,15 +20,16 @@
       clock: 1_000,
       weather: 30 * 60 * 1_000,
       news: 10 * 60 * 1_000,
+      menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
     }),
     jubileeDepartureDate: new Date("2026-04-30T15:00:00+02:00"),
     nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
+    menuGithubUrl: MENU_GITHUB_URL,
     cacheKeys: Object.freeze({
-      menu: "jpc-menu-cache-v2",
-      departures: "jpc-departures-cache-v2",
-      weather: "jpc-weather-cache-v2",
-      news: "jpc-news-cache-v2",
+      menu: "jpc-menu-cache-v3",
+      departures: "jpc-departures-cache-v3",
+      weather: "jpc-weather-cache-v3",
+      news: "jpc-news-cache-v3",
     }),
-    defaultMenu,
   });
 }());
