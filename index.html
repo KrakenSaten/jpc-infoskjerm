@@ -1,222 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kontorinfo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JPC Â· Skullerud live</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700;8..60,900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="dashboard">
-    <section class="hero-panel">
+
+<button class="mode-toggle" id="mode-toggle" type="button">Dark mode</button>
+
+<div class="shell">
+  <div class="screen">
+
+    <!-- TOP: brand + clock -->
+    <div class="top">
+      <div class="logo">
+        <div class="mark">J</div>
+        <div class="wm">
+          JPC
+          <small>Skullerud live</small>
+        </div>
+      </div>
+      <div></div>
+      <div class="clock-big">
+        <span id="clock">--:--</span>
+        <small id="date">Laster...</small>
+      </div>
+    </div>
+
+    <div class="subbar">
+      <span class="live"><span id="live-dot" class="dot"></span><span id="live-label">Sanntid</span></span>
+      <span>Oppdatert <span id="updated">--:--</span></span>
+    </div>
+
+    <!-- BODY: two columns -->
+    <div class="body">
+      <div class="col left">
+
+        <div class="card lunsj" id="lunsj-card">
+          <h3>
+            <span id="lunsj-heading">Lunsj i dag</span>
+            <span class="status" id="lunsj-status">Servering 11:30</span>
+          </h3>
+          <div class="dish" id="lunsj-dish">Laster...</div>
+          <div class="sub" id="lunsj-sub"></div>
+          <div class="aller" id="lunsj-aller"></div>
+          <div class="nextday">
+            <span class="lbl" id="nextday-lbl">I morgen</span>
+            <span id="nextday-dish"></span>
+          </div>
+        </div>
+
+        <div class="card wx" id="weather-card">
+          <h3>
+            <span>VÃ¦r â Skullerud</span>
+            <span class="status" id="weather-status-text">yr.no</span>
+          </h3>
+          <div class="now-row">
+            <div class="temp" id="weather-temp">--Â°</div>
+            <div class="desc" id="weather-desc">
+              Henter vÃ¦rdata...
+              <small id="weather-meta"></small>
+            </div>
+          </div>
+
+          <div class="chart">
+            <div class="chart-hd">
+              <span>Neste 24 t</span>
+              <span id="chart-range"></span>
+            </div>
+            <svg id="wx-svg" viewBox="0 0 320 180" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="tgrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%"  stop-color="var(--accent)" stop-opacity=".22"/>
+                  <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g id="wx-night"></g>
+              <g id="wx-daysep"></g>
+              <g id="wx-tgrid"></g>
+              <line id="wx-zero" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="2 3" stroke-width="1"/>
+              <path id="wx-rain" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-opacity=".55" stroke-width="1"/>
+              <path id="wx-temp-area" fill="url(#tgrad)" stroke="none"/>
+              <path id="wx-temp-line" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <g id="wx-labels" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="currentColor"></g>
+              <g id="wx-yleft" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".55"></g>
+              <g id="wx-yright" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".55"></g>
+              <g id="wx-xlabels" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".6"></g>
+              <g id="wx-days" font-family="IBM Plex Mono, monospace" font-size="9" font-weight="500" fill="currentColor" fill-opacity=".75" letter-spacing=".1em"></g>
+            </svg>
+            <div class="chart-legend">
+              <span><i class="sw sw-temp"></i>Temperatur Â°C</span>
+              <span><i class="sw sw-rain"></i>NedbÃ¸r mm</span>
+              <span><i class="sw sw-night"></i>Natt</span>
+            </div>
+          </div>
+
+          <div class="tomorrow">
+            <span>I morgen</span>
+            <b id="weather-tomorrow">--Â° Â· --</b>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="vr"></div>
+
+      <div class="col right">
+
+        <div class="card tbane" id="tbane-card">
+          <h3>
+            <span>T-bane Â· Skullerud</span>
+            <span class="status">sanntid</span>
+          </h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px"></th>
+                <th>Destinasjon</th>
+                <th style="text-align:right">Om</th>
+              </tr>
+            </thead>
+            <tbody id="tbane-body">
+              <tr><td colspan="3" class="tbane-empty">Henter avganger...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="notice" id="notice" hidden>
+          <div class="tag" id="notice-tag"></div>
+          <div class="msg" id="notice-msg"></div>
+        </div>
+
+        <div class="card news" id="news-card">
+          <h3>
+            <span>Nyheter Â· NRK</span>
+            <span class="status">
+              <span id="news-page">1/1</span> Â· oppd. <span id="news-updated">--:--</span>
+            </span>
+          </h3>
+          <ul class="news-list" id="news-list"></ul>
+          <div class="news-dots" id="news-dots"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- COUNTDOWN -->
+    <div class="countdown">
       <div>
-        <div class="hero-title-row">
-          <div class="hero-brand-title">
-            <div class="brand-lockup" aria-label="JPC">
-              <span class="brand-letter">J</span>
-              <span class="brand-letter">P</span>
-              <span class="brand-letter">C</span>
-            </div>
-            <h1>Skullerud live</h1>
-          </div>
-          <div class="hero-summary">
-            <p class="eyebrow">Intern infoskjerm</p>
-            <p class="lead">
-              Sanntid fra T-banen og dagens lunsj samlet p&aring; ett sted.
-            </p>
-            <p id="system-status" class="system-status">Laster data...</p>
-          </div>
-          <div class="hero-right">
-            <button id="fullscreen-btn" class="fullscreen-btn" type="button" title="Fullskjerm (F)" aria-label="Fullskjerm">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/></svg>
-            </button>
-            <div class="clock-card panel-clock hero-clock">
-              <p id="current-date" class="clock-date">Mandag 20. april</p>
-              <p id="current-time" class="clock-time">08:00</p>
-              <p id="week-label" class="clock-week">Uke 17</p>
-            </div>
-          </div>
-        </div>
-        <p id="occasion-banner" class="occasion-banner" hidden></p>
+        <div class="title">Nedtelling Â· JPC AS</div>
+        <div class="event">30 Ã¥rs-tur til Brussel <em>â avreise 30.04 kl. 15:00</em></div>
       </div>
-    </section>
-
-    <section class="content-grid">
-      <article class="panel departures-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">Sanntid</p>
-            <h2>Skullerud T-bane</h2>
-          </div>
-          <div class="panel-meta">
-            <span class="live-pill">Live</span>
-            <span id="departures-updated" class="muted">Oppdaterer...</span>
-          </div>
-        </div>
-
-        <p class="panel-copy">
-          Neste avganger fra Skullerud gruppert per retning. Listen oppdateres automatisk.
-        </p>
-
-        <div id="departures-list" class="departures-list" aria-live="polite"></div>
-        <p id="departures-status" class="status-text"></p>
-
-        <section class="news-section" aria-labelledby="news-heading">
-          <div class="panel-header news-header">
-            <div>
-              <p class="eyebrow">Nyheter</p>
-              <h3 id="news-heading">Siste fra NRK</h3>
-            </div>
-            <span id="news-updated" class="muted">Oppdaterer...</span>
-          </div>
-
-          <div id="news-list" class="news-list" aria-live="polite"></div>
-          <p id="news-status" class="status-text"></p>
-        </section>
-
-        <section class="countdown-section" aria-labelledby="countdown-heading">
-          <div class="panel-header countdown-header">
-            <div>
-              <p class="eyebrow">Jubileum</p>
-              <h3 id="countdown-heading">30 &aring;rs jubileum</h3>
-            </div>
-          </div>
-
-          <article class="countdown-card">
-            <p class="countdown-kicker">JPC AS &middot; Tur til Brussel</p>
-            <p id="countdown-display" class="countdown-display">42 dager 07 timer 15 min</p>
-            <p id="countdown-subtitle" class="countdown-subtitle">Avreise 30. april kl. 15:00</p>
-          </article>
-        </section>
-      </article>
-
-      <section class="lunch-column">
-        <article class="panel weather-panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">V&aelig;r</p>
-              <h2>Skullerud</h2>
-            </div>
-            <span id="weather-updated" class="muted">Oppdaterer...</span>
-          </div>
-
-          <div id="weather-cards" class="weather-cards" aria-live="polite"></div>
-          <div class="weather-graph-wrap">
-            <div class="weather-graph-header">
-              <p class="weather-graph-title">Time for time</p>
-              <p class="weather-graph-subtitle">Kompakt graf i Yr-stil for neste 24 timer</p>
-            </div>
-            <div id="weather-graph" class="weather-graph" aria-live="polite"></div>
-          </div>
-          <p id="weather-status" class="status-text"></p>
-        </article>
-
-        <article id="today-lunch-panel" class="panel lunch-panel highlight">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Lunsj</p>
-              <h2>I dag</h2>
-            </div>
-            <span id="today-day-label" class="day-chip">Mandag</span>
-          </div>
-
-          <h3 id="today-lunch-title" class="lunch-title"></h3>
-          <p id="today-lunch-allergens" class="allergen-text"></p>
-        </article>
-
-        <article id="tomorrow-lunch-panel" class="panel lunch-panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Lunsj</p>
-              <h2>Neste dag</h2>
-            </div>
-            <span id="tomorrow-day-label" class="day-chip muted-chip">Tirsdag</span>
-          </div>
-
-          <h3 id="tomorrow-lunch-title" class="lunch-title"></h3>
-          <p id="tomorrow-lunch-allergens" class="allergen-text"></p>
-        </article>
-
-        <article class="panel menu-panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Oversikt</p>
-              <h2>Ukemeny</h2>
-            </div>
-            <span id="menu-week-badge" class="menu-week-badge">Uke 17</span>
-          </div>
-
-          <div id="menu-note" class="menu-note"></div>
-          <div id="weekly-menu" class="weekly-menu"></div>
-        </article>
-      </section>
-    </section>
-  </main>
-
-  <div id="refresh-hint" class="refresh-hint" aria-hidden="true">Oppdaterer alle paneler...</div>
-
-  <template id="departure-template">
-    <article class="departure-card">
-      <div class="departure-line">
-        <span class="line-badge"></span>
-        <div>
-          <p class="departure-destination"></p>
-          <p class="departure-platform"></p>
-        </div>
+      <div class="digits" id="countdown">
+        <div class="unit"><div class="num" id="cd-d">--</div><div class="lbl">dager</div></div>
+        <div class="unit"><div class="num" id="cd-h">--</div><div class="lbl">timer</div></div>
+        <div class="unit"><div class="num" id="cd-m">--</div><div class="lbl">min</div></div>
+        <div class="unit"><div class="num" id="cd-s">--</div><div class="lbl">sek</div></div>
       </div>
-      <div class="departure-time-wrap">
-        <p class="departure-time"></p>
-        <p class="departure-countdown"></p>
-        <p class="departure-status-badge"></p>
-      </div>
-    </article>
-  </template>
+    </div>
 
-  <template id="departure-group-template">
-    <section class="departure-group">
-      <div class="departure-group-header">
-        <div>
-          <p class="departure-group-title"></p>
-          <p class="departure-group-subtitle"></p>
-        </div>
-      </div>
-      <div class="departure-group-list"></div>
-    </section>
-  </template>
+    <div class="foot">
+      <span>JPC Â· infoskjerm Â· v3</span>
+      <span>Skullerud, Oslo</span>
+    </div>
 
-  <template id="menu-item-template">
-    <article class="menu-item">
-      <div>
-        <p class="menu-day"></p>
-        <p class="menu-dish"></p>
-      </div>
-      <p class="menu-allergens"></p>
-    </article>
-  </template>
+  </div>
+</div>
 
-  <template id="weather-card-template">
-    <article class="weather-card">
-      <p class="weather-day"></p>
-      <p class="weather-summary"></p>
-      <p class="weather-temp"></p>
-      <p class="weather-meta"></p>
-    </article>
-  </template>
-
-  <template id="news-item-template">
-    <a class="news-item" target="_blank" rel="noreferrer noopener">
-      <p class="news-source"></p>
-      <p class="news-title"></p>
-    </a>
-  </template>
-
-  <script src="config.js"></script>
-  <script src="menu-loader.js"></script>
-  <script src="renderers.js"></script>
-  <script src="services.js"></script>
-  <script src="app.js"></script>
+<script src="config.js"></script>
+<script src="menu-loader.js"></script>
+<script src="renderers.js"></script>
+<script src="services.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
