@@ -29,12 +29,18 @@
             </p>
             <p id="system-status" class="system-status">Laster data...</p>
           </div>
-          <div class="clock-card panel-clock hero-clock">
-            <p id="current-date" class="clock-date">Onsdag 18. mars</p>
-            <p id="current-time" class="clock-time">10:52</p>
-            <p id="week-label" class="clock-week">Uke 12</p>
+          <div class="hero-right">
+            <button id="fullscreen-btn" class="fullscreen-btn" type="button" title="Fullskjerm (F)" aria-label="Fullskjerm">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/></svg>
+            </button>
+            <div class="clock-card panel-clock hero-clock">
+              <p id="current-date" class="clock-date">Mandag 20. april</p>
+              <p id="current-time" class="clock-time">08:00</p>
+              <p id="week-label" class="clock-week">Uke 17</p>
+            </div>
           </div>
         </div>
+        <p id="occasion-banner" class="occasion-banner" hidden></p>
       </div>
     </section>
 
@@ -108,26 +114,26 @@
           <p id="weather-status" class="status-text"></p>
         </article>
 
-        <article class="panel lunch-panel highlight">
+        <article id="today-lunch-panel" class="panel lunch-panel highlight">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Lunsj</p>
               <h2>I dag</h2>
             </div>
-            <span id="today-day-label" class="day-chip">Onsdag</span>
+            <span id="today-day-label" class="day-chip">Mandag</span>
           </div>
 
           <h3 id="today-lunch-title" class="lunch-title"></h3>
           <p id="today-lunch-allergens" class="allergen-text"></p>
         </article>
 
-        <article class="panel lunch-panel">
+        <article id="tomorrow-lunch-panel" class="panel lunch-panel">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Lunsj</p>
-              <h2>I morgen</h2>
+              <h2>Neste dag</h2>
             </div>
-            <span id="tomorrow-day-label" class="day-chip muted-chip">Torsdag</span>
+            <span id="tomorrow-day-label" class="day-chip muted-chip">Tirsdag</span>
           </div>
 
           <h3 id="tomorrow-lunch-title" class="lunch-title"></h3>
@@ -140,7 +146,7 @@
               <p class="eyebrow">Oversikt</p>
               <h2>Ukemeny</h2>
             </div>
-            <span id="menu-week-badge" class="menu-week-badge">Uke 12</span>
+            <span id="menu-week-badge" class="menu-week-badge">Uke 17</span>
           </div>
 
           <div id="menu-note" class="menu-note"></div>
@@ -149,6 +155,8 @@
       </section>
     </section>
   </main>
+
+  <div id="refresh-hint" class="refresh-hint" aria-hidden="true">Oppdaterer alle paneler...</div>
 
   <template id="departure-template">
     <article class="departure-card">
@@ -205,23 +213,10 @@
     </a>
   </template>
 
-  <script src="menu.js"></script>
   <script src="config.js"></script>
   <script src="menu-loader.js"></script>
   <script src="renderers.js"></script>
   <script src="services.js"></script>
   <script src="app.js"></script>
-
-  <script>
-    (function() {
-      const params = new URLSearchParams(window.location.search);
-      const rotateBack = params.get("rotateBack");
-      if (!rotateBack) return;
-      const duration = 60000;
-      setTimeout(function() {
-        window.location.href = decodeURIComponent(rotateBack);
-      }, duration);
-    })();
-  </script>
 </body>
 </html>
