@@ -5,10 +5,9 @@ const {
   jubileeDepartureDate: JUBILEE_DEPARTURE_DATE,
   nrkNewsFeedUrl: NRK_NEWS_FEED_URL,
   cacheKeys: CACHE_KEYS,
-  defaultMenu,
 } = window.JPC_CONFIG;
 
-const { loadMenuFromSources } = window.JPCMenuLoader;
+const { loadMenuFromSources, getIsoWeek } = window.JPCMenuLoader;
 const {
   formatClock,
   formatNewsTimestamp,
@@ -18,28 +17,23 @@ const {
   normalizeWeatherGraphCopy,
   renderCountdown,
   renderLunch,
+  renderLunchError,
   renderNews,
+  renderOccasionBanner,
   renderWeather,
   renderWeatherGraph,
   renderWeeklyMenu,
+  renderWeeklyMenuError,
+  setPanelStaleFlag,
+  updateTheme,
 } = window.JPCRenderers;
 const { fetchDeparturesData, fetchNewsData, fetchWeatherData } = window.JPCServices;
 
 const state = {
-  menu: defaultMenu,
-  menuSource: "fallback",
-  lastSuccess: {
-    departures: null,
-    weather: null,
-    news: null,
-    menu: null,
-  },
-  stale: {
-    departures: false,
-    weather: false,
-    news: false,
-    menu: false,
-  },
+  menu: null,
+  menuSource: null,
+  lastSuccess: { departures: null, weather: null, news: null, menu: null },
+  stale: { departures: false, weather: false, news: false, menu: false },
 };
 
 const elements = {
@@ -47,27 +41,36 @@ const elements = {
   currentTime: document.querySelector("#current-time"),
   weekLabel: document.querySelector("#week-label"),
   systemStatus: document.querySelector("#system-status"),
+  departuresPanel: document.querySelector(".departures-panel"),
   departuresUpdated: document.querySelector("#departures-updated"),
   departuresStatus: document.querySelector("#departures-status"),
   departuresList: document.querySelector("#departures-list"),
+  newsSection: document.querySelector(".news-section"),
   newsUpdated: document.querySelector("#news-updated"),
   newsStatus: document.querySelector("#news-status"),
   newsList: document.querySelector("#news-list"),
   countdownDisplay: document.querySelector("#countdown-display"),
   countdownSubtitle: document.querySelector("#countdown-subtitle"),
+  weatherPanel: document.querySelector(".weather-panel"),
   weatherUpdated: document.querySelector("#weather-updated"),
   weatherStatus: document.querySelector("#weather-status"),
   weatherCards: document.querySelector("#weather-cards"),
   weatherGraph: document.querySelector("#weather-graph"),
+  todayLunchPanel: document.querySelector("#today-lunch-panel"),
+  tomorrowLunchPanel: document.querySelector("#tomorrow-lunch-panel"),
   todayDayLabel: document.querySelector("#today-day-label"),
   todayLunchTitle: document.querySelector("#today-lunch-title"),
   todayLunchAllergens: document.querySelector("#today-lunch-allergens"),
   tomorrowDayLabel: document.querySelector("#tomorrow-day-label"),
   tomorrowLunchTitle: document.querySelector("#tomorrow-lunch-title"),
   tomorrowLunchAllergens: document.querySelector("#tomorrow-lunch-allergens"),
+  menuPanel: document.querySelector(".menu-panel"),
   menuWeekBadge: document.querySelector("#menu-week-badge"),
   menuNote: document.querySelector("#menu-note"),
   weeklyMenu: document.querySelector("#weekly-menu"),
+  occasionBanner: document.querySelector("#occasion-banner"),
+  fullscreenBtn: document.querySelector("#fullscreen-btn"),
+  refreshHint: document.querySelector("#refresh-hint"),
   departureTemplate: document.querySelector("#departure-template"),
   departureGroupTemplate: document.querySelector("#departure-group-template"),
   menuItemTemplate: document.querySelector("#menu-item-template"),
@@ -79,122 +82,114 @@ function readCache(key) {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function writeCache(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore cache write failures.
-  }
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
 function renderSystemStatus() {
   const sources = ["departures", "weather", "news", "menu"];
-  const knownDates = sources
-    .map((source) => state.lastSuccess[source])
+  const known = sources
+    .map(s => state.lastSuccess[s])
     .filter(Boolean)
-    .sort((left, right) => right.getTime() - left.getTime());
-  const staleSources = sources.filter((source) => state.stale[source]);
+    .sort((a, b) => b.getTime() - a.getTime());
+  const staleSources = sources.filter(s => state.stale[s]);
 
-  if (!knownDates.length) {
+  if (!known.length) {
     elements.systemStatus.textContent = "Laster data fra kilder...";
     return;
   }
 
-  const latestLabel = knownDates[0].toLocaleTimeString("no-NO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
+  const latest = known[0].toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
   elements.systemStatus.textContent = staleSources.length
-    ? `Viser delvis lagrede data. Siste vellykkede oppdatering ${latestLabel}.`
-    : `Alle paneler oppdatert ${latestLabel}.`;
+    ? "Viser delvis lagrede data. Siste vellykkede oppdatering " + latest + "."
+    : "Alle paneler oppdatert " + latest + ".";
 }
 
 function setSourceUpdate(source, date, stale = false) {
   state.lastSuccess[source] = date;
   state.stale[source] = stale;
+  const panelMap = {
+    departures: elements.departuresPanel,
+    weather: elements.weatherPanel,
+    news: elements.newsSection,
+    menu: elements.menuPanel,
+  };
+  setPanelStaleFlag(panelMap[source], stale);
   renderSystemStatus();
-}
-
-function sortDepartureGroups(left, right) {
-  return left[1][0].timestamp - right[1][0].timestamp;
 }
 
 function renderDepartures(departures) {
   elements.departuresList.innerHTML = "";
-
   if (!departures.length) {
     elements.departuresStatus.textContent = "Fant ingen T-baneavganger akkurat n\u00e5.";
     return;
   }
-
   elements.departuresStatus.textContent = "";
-  const groups = departures.reduce((accumulator, departure) => {
-    const groupKey = departure.directionLabel;
-    if (!accumulator[groupKey]) {
-      accumulator[groupKey] = [];
-    }
-    accumulator[groupKey].push(departure);
-    return accumulator;
+  const groups = departures.reduce((acc, dep) => {
+    if (!acc[dep.directionLabel]) acc[dep.directionLabel] = [];
+    acc[dep.directionLabel].push(dep);
+    return acc;
   }, {});
 
   Object.entries(groups)
-    .sort(sortDepartureGroups)
+    .sort((l, r) => l[1][0].timestamp - r[1][0].timestamp)
     .slice(0, 2)
-    .forEach(([directionLabel, groupDepartures]) => {
-      const groupFragment = elements.departureGroupTemplate.content.cloneNode(true);
-      const visibleDepartures = groupDepartures.slice(0, 2);
-      groupFragment.querySelector(".departure-group-title").textContent = directionLabel;
-      groupFragment.querySelector(".departure-group-subtitle").textContent = `${visibleDepartures.length} neste avganger`;
-      const list = groupFragment.querySelector(".departure-group-list");
-
-      visibleDepartures.forEach((departure) => {
-        const fragment = elements.departureTemplate.content.cloneNode(true);
-        const statusBadge = fragment.querySelector(".departure-status-badge");
-        fragment.querySelector(".line-badge").textContent = departure.line;
-        fragment.querySelector(".departure-destination").textContent = departure.destination;
-        fragment.querySelector(".departure-platform").textContent = departure.platform.replace("Spor ", "");
-        fragment.querySelector(".departure-time").textContent = departure.timeLabel;
-        fragment.querySelector(".departure-countdown").textContent = departure.countdownLabel;
-        statusBadge.textContent = departure.statusLabel;
-        statusBadge.classList.toggle("delayed", departure.isDelayed);
-        list.appendChild(fragment);
+    .forEach(([dirLabel, groupDeps]) => {
+      const groupFrag = elements.departureGroupTemplate.content.cloneNode(true);
+      const visible = groupDeps.slice(0, 2);
+      groupFrag.querySelector(".departure-group-title").textContent = dirLabel;
+      groupFrag.querySelector(".departure-group-subtitle").textContent = visible.length + " neste avganger";
+      const list = groupFrag.querySelector(".departure-group-list");
+      visible.forEach(dep => {
+        const frag = elements.departureTemplate.content.cloneNode(true);
+        const badge = frag.querySelector(".departure-status-badge");
+        frag.querySelector(".line-badge").textContent = dep.line;
+        frag.querySelector(".departure-destination").textContent = dep.destination;
+        frag.querySelector(".departure-platform").textContent = dep.platform.replace("Spor ", "");
+        frag.querySelector(".departure-time").textContent = dep.timeLabel;
+        frag.querySelector(".departure-countdown").textContent = dep.countdownLabel;
+        badge.textContent = dep.statusLabel;
+        badge.classList.toggle("delayed", dep.isDelayed);
+        list.appendChild(frag);
       });
-
-      elements.departuresList.appendChild(groupFragment);
+      elements.departuresList.appendChild(groupFrag);
     });
 }
 
 async function loadMenu() {
   try {
-    const { menu, source } = await loadMenuFromSources();
+    const { menu, source, isCurrentWeek } = await loadMenuFromSources();
     state.menu = menu;
     state.menuSource = source;
-    renderLunch(elements, state.menu);
-    renderWeeklyMenu(elements, state.menu);
+    renderLunch(elements, menu, isCurrentWeek);
+    renderWeeklyMenu(elements, menu, isCurrentWeek);
     const updatedAt = new Date();
     writeCache(CACHE_KEYS.menu, { menu, fetchedAt: updatedAt.toISOString() });
-    setSourceUpdate("menu", updatedAt, false);
-  } catch {
+    setSourceUpdate("menu", updatedAt, !isCurrentWeek);
+  } catch (error) {
     const cached = readCache(CACHE_KEYS.menu);
-    const cachedMenu = Array.isArray(cached?.days) ? cached : cached?.menu;
+    const cachedMenu = cached?.menu;
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
-    state.menu = cachedMenu || defaultMenu;
-    state.menuSource = cachedMenu ? "cache" : "fallback";
-    renderLunch(elements, state.menu);
-    renderWeeklyMenu(elements, state.menu);
-    setSourceUpdate("menu", cachedDate, Boolean(cachedMenu));
+    const currentWeek = getIsoWeek(new Date());
+    if (cachedMenu && cachedMenu.weekNumber === currentWeek) {
+      state.menu = cachedMenu;
+      state.menuSource = "cache";
+      renderLunch(elements, cachedMenu, true);
+      renderWeeklyMenu(elements, cachedMenu, true);
+      setSourceUpdate("menu", cachedDate, true);
+    } else {
+      renderLunchError(elements);
+      renderWeeklyMenuError(elements, currentWeek);
+      setSourceUpdate("menu", cachedDate, true);
+    }
   }
 }
 
 async function fetchDepartures() {
   elements.departuresStatus.textContent = "Henter sanntidsdata...";
-
   try {
     const departures = await fetchDeparturesData(SKULLERUD_STOP_ID);
     const updatedAt = new Date();
@@ -204,20 +199,19 @@ async function fetchDepartures() {
     setSourceUpdate("departures", updatedAt, false);
   } catch {
     const cached = readCache(CACHE_KEYS.departures);
-    const cachedDepartures = Array.isArray(cached) ? cached : (cached?.items || []);
+    const cachedDeps = Array.isArray(cached) ? cached : (cached?.items || []);
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
-    renderDepartures(cachedDepartures);
-    elements.departuresStatus.textContent = cachedDepartures.length
+    renderDepartures(cachedDeps);
+    elements.departuresStatus.textContent = cachedDeps.length
       ? "Viser sist lagrede T-baneavganger."
       : "Kunne ikke hente sanntid akkurat n\u00e5. Sjekk nettverk eller API-tilgang.";
     elements.departuresUpdated.textContent = formatUpdatedLabel(cachedDate, true);
-    setSourceUpdate("departures", cachedDate, cachedDepartures.length > 0);
+    setSourceUpdate("departures", cachedDate, cachedDeps.length > 0);
   }
 }
 
 async function fetchWeather() {
   elements.weatherStatus.textContent = "Henter v\u00e6rmelding...";
-
   try {
     const weather = await fetchWeatherData(SKULLERUD_COORDS, getWeatherSummary);
     const updatedAt = new Date();
@@ -234,7 +228,6 @@ async function fetchWeather() {
   } catch {
     const cached = readCache(CACHE_KEYS.weather);
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
-
     if (cached) {
       renderWeather(elements, cached.days || []);
       renderWeatherGraph(elements, cached.hourlyForecast || []);
@@ -244,7 +237,6 @@ async function fetchWeather() {
       setSourceUpdate("weather", cachedDate, true);
       return;
     }
-
     elements.weatherCards.innerHTML = "";
     elements.weatherGraph.innerHTML = "";
     elements.weatherStatus.textContent = "Kunne ikke hente v\u00e6rmelding akkurat n\u00e5.";
@@ -255,7 +247,6 @@ async function fetchWeather() {
 
 async function fetchNews() {
   elements.newsStatus.textContent = "Henter siste nytt...";
-
   try {
     const items = await fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp);
     const updatedAt = new Date();
@@ -276,13 +267,67 @@ async function fetchNews() {
   }
 }
 
+function refreshAll() {
+  fetchDepartures();
+  fetchWeather();
+  fetchNews();
+  loadMenu();
+}
+
+function setupKeyboardShortcuts() {
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    const key = e.key.toLowerCase();
+    if (key === "r") {
+      e.preventDefault();
+      refreshAll();
+      flashRefreshHint();
+    } else if (key === "f") {
+      e.preventDefault();
+      toggleFullscreen();
+    }
+  });
+}
+
+function flashRefreshHint() {
+  if (!elements.refreshHint) return;
+  elements.refreshHint.classList.add("visible");
+  setTimeout(() => elements.refreshHint.classList.remove("visible"), 1500);
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
+function setupFullscreenButton() {
+  if (!elements.fullscreenBtn) return;
+  elements.fullscreenBtn.addEventListener("click", toggleFullscreen);
+}
+
+function setupVisibilityHandler() {
+  // Naar fanen blir synlig igjen etter pause, refresh raskt
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshAll();
+    }
+  });
+}
+
 async function init() {
   normalizeStaticCopy();
   formatClock(elements);
   renderCountdown(elements, JUBILEE_DEPARTURE_DATE);
-  renderLunch(elements, state.menu);
-  renderWeeklyMenu(elements, state.menu);
+  renderOccasionBanner(elements);
+  updateTheme();
   renderSystemStatus();
+
+  setupKeyboardShortcuts();
+  setupFullscreenButton();
+  setupVisibilityHandler();
 
   await loadMenu();
   fetchDepartures();
@@ -291,9 +336,12 @@ async function init() {
 
   window.setInterval(() => formatClock(elements), REFRESH_MS.clock);
   window.setInterval(() => renderCountdown(elements, JUBILEE_DEPARTURE_DATE), REFRESH_MS.clock);
+  window.setInterval(() => renderOccasionBanner(elements), 60 * 60 * 1000);
+  window.setInterval(updateTheme, 15 * 60 * 1000);
   window.setInterval(fetchDepartures, REFRESH_MS.departures);
   window.setInterval(fetchWeather, REFRESH_MS.weather);
   window.setInterval(fetchNews, REFRESH_MS.news);
+  window.setInterval(loadMenu, REFRESH_MS.menu);
 }
 
 init();
