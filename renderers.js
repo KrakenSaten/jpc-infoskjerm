@@ -1,363 +1,635 @@
 (function initRenderers() {
-  function getIsoWeekNumber(date) {
-    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNumber = utcDate.getUTCDay() || 7;
-    utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNumber);
-    const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
-    return Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+  const WEEKDAYS_SHORT = ["MA", "TI", "ON", "TO", "FR", "L\u00d8", "S\u00d8"];
+  const WEEKDAYS_LONG = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "L\u00f8rdag", "S\u00f8ndag"];
+  const MONTHS = ["januar", "februar", "mars", "april", "mai", "juni",
+                  "juli", "august", "september", "oktober", "november", "desember"];
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function getIsoWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
-  function normalizeStaticCopy() {
-    const countdownHeading = document.querySelector("#countdown-heading");
-    const countdownKicker = document.querySelector(".countdown-kicker");
-    if (countdownHeading) countdownHeading.textContent = "30 \u00e5rs jubileum";
-    if (countdownKicker)  countdownKicker.textContent = "JPC AS \u00b7 Tur til Brussel";
-  }
-
-  function normalizeWeatherGraphCopy(elements) {
-    const svg = elements.weatherGraph?.querySelector("svg");
-    if (svg) svg.setAttribute("aria-label", "V\u00e6rgraf for de neste 24 timene");
-  }
+  /* ---------- CLOCK ---------- */
 
   function formatClock(elements) {
     const now = new Date();
-    elements.currentDate.textContent = now.toLocaleDateString("no-NO", {
-      weekday: "long", day: "numeric", month: "long",
-    });
-    elements.currentTime.textContent = now.toLocaleTimeString("no-NO", {
-      hour: "2-digit", minute: "2-digit",
-    });
-    elements.weekLabel.textContent = "Uke " + getIsoWeekNumber(now);
+    const dayIdx = (now.getDay() + 6) % 7; // 0=Mon
+    elements.clock.textContent = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+    elements.date.textContent = `${WEEKDAYS_LONG[dayIdx]} ${now.getDate()}. ${MONTHS[now.getMonth()]} \u00b7 uke ${getIsoWeek(now)}`;
   }
 
-  function renderCountdown(elements, departureDate) {
-    const now = new Date();
-    const diff = departureDate.getTime() - now.getTime();
-    if (diff <= 0) {
-      elements.countdownDisplay.textContent = "Avreise i dag";
-      elements.countdownSubtitle.textContent = "Avreise 30. april 2026 kl. 15:00";
-      return;
-    }
-    const totalMinutes = Math.floor(diff / 60000);
-    const days = Math.floor(totalMinutes / (60 * 24));
-    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-    const minutes = totalMinutes % 60;
-    elements.countdownDisplay.textContent =
-      days + " dager " + String(hours).padStart(2, "0") + " timer " + String(minutes).padStart(2, "0") + " min";
-    elements.countdownSubtitle.textContent = "Avreise 30. april 2026 kl. 15:00";
+  /* ---------- COUNTDOWN ---------- */
+
+  function renderCountdown(elements, targetDate) {
+    let diff = Math.max(0, targetDate.getTime() - Date.now());
+    const d = Math.floor(diff / 86400000); diff -= d * 86400000;
+    const h = Math.floor(diff / 3600000);  diff -= h * 3600000;
+    const m = Math.floor(diff / 60000);    diff -= m * 60000;
+    const s = Math.floor(diff / 1000);
+    elements.cdDays.textContent = pad2(d);
+    elements.cdHours.textContent = pad2(h);
+    elements.cdMins.textContent = pad2(m);
+    elements.cdSecs.textContent = pad2(s);
   }
+
+  /* ---------- LUNSJ ---------- */
 
   function getMenuForDay(menu, dayIndex) {
     return menu.days.find(item => item.dayIndex === dayIndex) || null;
   }
 
   function getLunchForDate(menu, date) {
-    const jsDay = date.getDay(); // 0=sondag, 1=mandag ... 6=lordag
+    const jsDay = date.getDay();
     if (jsDay === 0 || jsDay === 6) return null; // ingen lunsj i helg
     return getMenuForDay(menu, jsDay);
   }
 
-  function renderLunchCard(dayLabelEl, titleEl, allergenEl, menuEntry, fallbackLabel) {
-    if (!menuEntry) {
-      dayLabelEl.textContent = fallbackLabel;
-      titleEl.textContent = "Ingen lunsj registrert";
-      allergenEl.textContent = "Ingen rett funnet for denne dagen i menyen.";
-      return;
+  function getLunchStatus(now) {
+    const h = now.getHours();
+    const m = now.getMinutes();
+    const dow = now.getDay();
+    if (dow === 0 || dow === 6) return "Stengt i helg";
+    if (h < 10 || (h === 10 && m < 30)) return "Servering 11:30";
+    if ((h === 10 && m >= 30) || h === 11 || h === 12) return "Servering n\u00e5";
+    if (h === 13) return "Servering ferdig";
+    if (h >= 14 && h < 17) return "Ferdig for i dag";
+    return "";
+  }
+
+  function splitDish(title) {
+    // Prototype viser dish som hovedtittel + beskrivelse i italic.
+    // Hvis tittel inneholder "med" eller "m/", del der.
+    const str = String(title || "").trim();
+    if (!str) return { main: "", sub: "" };
+
+    // Se etter " med " eller " m/ "
+    const matchers = [" med ", " m/ ", " m\u00b2 "];
+    for (const sep of matchers) {
+      const idx = str.toLowerCase().indexOf(sep);
+      if (idx > 0 && idx < str.length - 4) {
+        return {
+          main: str.substring(0, idx).trim(),
+          sub: str.substring(idx + 1).trim(),
+        };
+      }
     }
-    dayLabelEl.textContent = menuEntry.dayLabel;
-    titleEl.textContent = menuEntry.title;
-    allergenEl.textContent = menuEntry.allergens;
+    return { main: str, sub: "" };
   }
 
   function renderLunch(elements, menu, isCurrentWeek) {
+    elements.lunsjCard.classList.remove("error");
+
     if (!isCurrentWeek) {
       renderLunchError(elements);
       return;
     }
+
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    // Om i dag er fredag, hopp over helgen til mandag
-    if (today.getDay() === 5) {
-      tomorrow.setDate(today.getDate() + 3);
-    } else if (today.getDay() === 6) {
-      tomorrow.setDate(today.getDate() + 2);
+    const todayEntry = getLunchForDate(menu, today);
+    elements.lunsjStatus.textContent = getLunchStatus(today);
+
+    if (!todayEntry) {
+      elements.lunsjHeading.textContent = "Lunsj";
+      elements.lunsjDish.textContent = "Ingen servering i dag";
+      elements.lunsjSub.textContent = "";
+      elements.lunsjAller.textContent = "";
+    } else {
+      elements.lunsjHeading.textContent = "Lunsj i dag";
+      const { main, sub } = splitDish(todayEntry.title);
+      elements.lunsjDish.textContent = main || todayEntry.title;
+      elements.lunsjSub.textContent = sub;
+      elements.lunsjAller.textContent = todayEntry.allergens || "";
     }
-    renderLunchCard(
-      elements.todayDayLabel,
-      elements.todayLunchTitle,
-      elements.todayLunchAllergens,
-      getLunchForDate(menu, today),
-      "I dag"
-    );
-    renderLunchCard(
-      elements.tomorrowDayLabel,
-      elements.tomorrowLunchTitle,
-      elements.tomorrowLunchAllergens,
-      getLunchForDate(menu, tomorrow),
-      "Neste dag"
-    );
+
+    // Neste dag: i morgen for man-tor, mandag for fredag, ellers mandag
+    const tomorrow = new Date(today);
+    const dow = today.getDay();
+    if (dow >= 1 && dow <= 4) {
+      tomorrow.setDate(today.getDate() + 1);
+    } else if (dow === 5) {
+      tomorrow.setDate(today.getDate() + 3);
+    } else if (dow === 6) {
+      tomorrow.setDate(today.getDate() + 2);
+    } else {
+      tomorrow.setDate(today.getDate() + 1);
+    }
+
+    const nextEntry = getLunchForDate(menu, tomorrow);
+    const tomorrowDayIdx = (tomorrow.getDay() + 6) % 7;
+    const lblText = (dow >= 1 && dow <= 4) ? "I morgen" : "Neste arbeidsdag";
+    elements.nextdayLbl.textContent = `${lblText} \u00b7 ${WEEKDAYS_LONG[tomorrowDayIdx].toLowerCase()}`;
+    elements.nextdayDish.textContent = nextEntry ? nextEntry.title : "Ikke satt";
   }
 
   function renderLunchError(elements) {
-    elements.todayDayLabel.textContent = "Mangler";
-    elements.todayLunchTitle.textContent = "Ingen meny for denne uken";
-    elements.todayLunchAllergens.textContent = "Menyen er ikke oppdatert. Kontakt ansvarlig for infoskjerm.";
-    elements.tomorrowDayLabel.textContent = "Mangler";
-    elements.tomorrowLunchTitle.textContent = "Ingen meny for denne uken";
-    elements.tomorrowLunchAllergens.textContent = "Menyen er ikke oppdatert.";
+    elements.lunsjCard.classList.add("error");
+    elements.lunsjHeading.textContent = "Lunsj";
+    elements.lunsjStatus.textContent = "";
+    elements.lunsjDish.textContent = "Meny mangler for denne uken";
+    elements.lunsjSub.textContent = "Kontakt ansvarlig for infoskjerm.";
+    elements.lunsjAller.textContent = "";
+    elements.nextdayLbl.textContent = "";
+    elements.nextdayDish.textContent = "";
   }
 
-  function renderWeeklyMenu(elements, menu, isCurrentWeek) {
-    elements.weeklyMenu.innerHTML = "";
-    elements.menuWeekBadge.textContent = "Uke " + menu.weekNumber;
-    if (!isCurrentWeek) {
-      renderWeeklyMenuError(elements, getIsoWeekNumber(new Date()));
+  /* ---------- T-BANE ---------- */
+
+  function renderDepartures(elements, departures) {
+    elements.tbaneBody.innerHTML = "";
+
+    if (!departures.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = '<td colspan="3" class="tbane-empty">Ingen avganger akkurat n\u00e5</td>';
+      elements.tbaneBody.appendChild(tr);
       return;
     }
-    elements.menuNote.textContent = "Viser menyen for denne uken.";
-    menu.days.forEach(item => {
-      const frag = elements.menuItemTemplate.content.cloneNode(true);
-      frag.querySelector(".menu-day").textContent = item.dayLabel;
-      frag.querySelector(".menu-dish").textContent = item.title;
-      frag.querySelector(".menu-allergens").textContent = item.allergens;
-      elements.weeklyMenu.appendChild(frag);
+
+    // Vis de neste 5
+    const now = Date.now();
+    departures.slice(0, 5).forEach(dep => {
+      const tr = document.createElement("tr");
+      const minsUntil = Math.max(0, Math.round((dep.timestamp - now) / 60000));
+
+      if (minsUntil <= 2) tr.classList.add("soon");
+      if (dep.isDelayed) tr.classList.add("delayed");
+
+      const tdBadge = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "line-badge";
+      badge.textContent = dep.line;
+      tdBadge.appendChild(badge);
+
+      const tdDir = document.createElement("td");
+      const dir = document.createElement("span");
+      dir.className = "dir";
+      dir.textContent = dep.directionLabel.replace(/^Mot\s+/i, "") || dep.destination;
+      tdDir.appendChild(dir);
+
+      const tdMin = document.createElement("td");
+      tdMin.className = "min";
+      if (minsUntil === 0) {
+        tdMin.textContent = "N\u00e5";
+      } else if (minsUntil === 1) {
+        tdMin.textContent = "1 min";
+      } else if (minsUntil < 20) {
+        tdMin.textContent = minsUntil + " min";
+      } else {
+        tdMin.textContent = dep.timeLabel;
+      }
+
+      tr.appendChild(tdBadge);
+      tr.appendChild(tdDir);
+      tr.appendChild(tdMin);
+      elements.tbaneBody.appendChild(tr);
     });
   }
 
-  function renderWeeklyMenuError(elements, currentWeek) {
-    elements.weeklyMenu.innerHTML = "";
-    elements.menuWeekBadge.textContent = "Uke " + currentWeek + " mangler";
-    elements.menuNote.textContent = "Fant ingen meny for uke " + currentWeek + ". Kontakt ansvarlig for infoskjerm.";
-  }
+  /* ---------- VÆR (siden + graf) ---------- */
 
-  function getWeatherSummary(code) {
-    const s = { 0: "Klart", 1: "For det meste klart", 2: "Delvis skyet", 3: "Overskyet", 45: "T\u00e5ke", 48: "T\u00e5ke med rim", 51: "Lett yr", 53: "Yr", 55: "Kraftig yr", 61: "Lett regn", 63: "Regn", 65: "Kraftig regn", 66: "Lett underkj\u00f8lt regn", 67: "Underkj\u00f8lt regn", 71: "Lett sn\u00f8", 73: "Sn\u00f8", 75: "Kraftig sn\u00f8", 77: "Sn\u00f8korn", 80: "Byger", 81: "Kraftige byger", 82: "S\u00e6rt kraftige byger", 85: "Sn\u00f8byger", 86: "Kraftige sn\u00f8byger", 95: "Torden", 96: "Torden med hagl", 99: "Kraftig torden med hagl" };
+  function weatherCodeText(code) {
+    const s = {
+      0: "Klart", 1: "For det meste klart", 2: "Delvis skyet", 3: "Overskyet",
+      45: "T\u00e5ke", 48: "T\u00e5ke med rim",
+      51: "Lett yr", 53: "Yr", 55: "Kraftig yr",
+      61: "Lett regn", 63: "Regn", 65: "Kraftig regn",
+      66: "Lett underkj\u00f8lt regn", 67: "Underkj\u00f8lt regn",
+      71: "Lett sn\u00f8", 73: "Sn\u00f8", 75: "Kraftig sn\u00f8", 77: "Sn\u00f8korn",
+      80: "Byger", 81: "Kraftige byger", 82: "S\u00e6rt kraftige byger",
+      85: "Sn\u00f8byger", 86: "Kraftige sn\u00f8byger",
+      95: "Torden", 96: "Torden med hagl", 99: "Kraftig torden med hagl",
+    };
     return s[code] || "Ukjent v\u00e6r";
   }
 
+  function weatherDescription(day) {
+    const base = weatherCodeText(day.weatherCode ?? 3);
+    const wind = Math.round(day.wind || 0);
+    if (wind < 2) return base + ".";
+    if (wind < 5) return base + ", lett bris.";
+    if (wind < 10) return base + ", frisk bris.";
+    return base + ", kraftig vind.";
+  }
+
   function renderWeather(elements, days) {
-    elements.weatherCards.innerHTML = "";
-    if (!days.length) {
-      elements.weatherStatus.textContent = "Fant ingen v\u00e6rdata akkurat n\u00e5.";
-      return;
+    if (!days || !days.length) return;
+    const today = days[0];
+    elements.weatherTemp.textContent = Math.round(today.maxTemp) + "\u00b0";
+    elements.weatherDesc.firstChild && (elements.weatherDesc.firstChild.textContent = weatherDescription(today));
+    elements.weatherMeta.textContent = `Vind ${Math.round(today.wind)} m/s \u00b7 ${today.precipitation.toFixed(1)} mm nedb\u00f8r`;
+
+    if (days[1]) {
+      const tomorrow = days[1];
+      elements.weatherTomorrow.textContent = `${Math.round(tomorrow.maxTemp)}\u00b0 \u00b7 ${weatherCodeText(tomorrow.weatherCode ?? 3).toLowerCase()}`;
     }
-    elements.weatherStatus.textContent = "";
-    days.forEach(day => {
-      const frag = elements.weatherCardTemplate.content.cloneNode(true);
-      frag.querySelector(".weather-day").textContent = day.label;
-      frag.querySelector(".weather-summary").textContent = day.summary;
-      frag.querySelector(".weather-temp").textContent = Math.round(day.maxTemp) + "\u00b0 / " + Math.round(day.minTemp) + "\u00b0";
-      frag.querySelector(".weather-meta").textContent = day.precipitation.toFixed(1) + " mm nedb\u00f8r \u2022 Vind " + Math.round(day.wind) + " m/s";
-      elements.weatherCards.appendChild(frag);
+  }
+
+  function renderWeatherGraph(elements, hourlyForecast) {
+    if (!hourlyForecast || !hourlyForecast.length) return;
+
+    const W = 320, H = 180;
+    const padL = 22, padR = 20, padT = 18, padB = 28;
+    const iw = W - padL - padR;
+    const tempH = (H - padT - padB) * 0.65;
+    const rainH = (H - padT - padB) * 0.25;
+    const rainY0 = padT + tempH + (H - padT - padB) * 0.05;
+    const rainY1 = rainY0 + rainH;
+
+    const points = hourlyForecast.slice(0, 25).map(h => {
+      const d = new Date(h.time);
+      return {
+        hour: d.getHours(),
+        date: d,
+        t: h.temperature,
+        r: h.precipitation || 0,
+        wc: h.weatherCode,
+      };
     });
-  }
 
-  function getWeatherIconSvg(code, x, y) {
-    if (code === 0 || code === 1) {
-      return '<g transform="translate(' + (x - 12) + ' ' + (y - 12) + ')">' +
-        '<circle cx="12" cy="12" r="7" fill="#ffb703" />' +
-        '<g stroke="#ffd166" stroke-width="1.6" stroke-linecap="round">' +
-        '<line x1="12" y1="1" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="23" />' +
-        '<line x1="1" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="23" y2="12" />' +
-        '<line x1="4" y1="4" x2="6.8" y2="6.8" /><line x1="17.2" y1="17.2" x2="20" y2="20" />' +
-        '<line x1="17.2" y1="6.8" x2="20" y2="4" /><line x1="4" y1="20" x2="6.8" y2="17.2" />' +
-        '</g></g>';
-    }
-    if (code === 2 || code === 3 || code === 45 || code === 48) {
-      return '<g transform="translate(' + (x - 14) + ' ' + (y - 10) + ')">' +
-        '<circle cx="10" cy="11" r="5.5" fill="#cfd5dd" />' +
-        '<circle cx="15" cy="9" r="7" fill="#d8dde4" />' +
-        '<circle cx="21" cy="11.5" r="5.5" fill="#cfd5dd" />' +
-        '<rect x="8" y="11" width="16" height="7" rx="3.5" fill="#d8dde4" />' +
-        '</g>';
-    }
-    if ([51, 53, 55, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
-      return '<g transform="translate(' + (x - 14) + ' ' + (y - 12) + ')">' +
-        '<circle cx="10" cy="11" r="5.5" fill="#cfd5dd" />' +
-        '<circle cx="15" cy="9" r="7" fill="#d8dde4" />' +
-        '<circle cx="21" cy="11.5" r="5.5" fill="#cfd5dd" />' +
-        '<rect x="8" y="11" width="16" height="7" rx="3.5" fill="#d8dde4" />' +
-        '<g stroke="#79c7ff" stroke-width="1.8" stroke-linecap="round">' +
-        '<line x1="10" y1="21" x2="8" y2="25" />' +
-        '<line x1="16" y1="21" x2="14" y2="25" />' +
-        '<line x1="22" y1="21" x2="20" y2="25" /></g></g>';
-    }
-    return '<g transform="translate(' + (x - 14) + ' ' + (y - 10) + ')">' +
-      '<circle cx="10" cy="11" r="5.5" fill="#cfd5dd" />' +
-      '<circle cx="15" cy="9" r="7" fill="#d8dde4" />' +
-      '<circle cx="21" cy="11.5" r="5.5" fill="#cfd5dd" />' +
-      '<rect x="8" y="11" width="16" height="7" rx="3.5" fill="#d8dde4" /></g>';
-  }
+    if (points.length < 2) return;
 
-  function renderWeatherGraph(elements, hours) {
-    elements.weatherGraph.innerHTML = "";
-    if (!hours.length) return;
+    const tvals = points.map(p => p.t);
+    const rawMin = Math.min(...tvals);
+    const rawMax = Math.max(...tvals);
+    const tmin = Math.floor(Math.min(rawMin, 0) / 3) * 3;
+    const tmax = Math.ceil(rawMax / 3) * 3;
+    const tspan = Math.max(1, tmax - tmin);
+    const tempY0 = padT;
+    const tempY1 = padT + tempH;
+    const tY = (t) => tempY1 - ((t - tmin) / tspan) * tempH;
 
-    const width = 760;
-    const height = 216;
-    const padding = { top: 34, right: 18, bottom: 34, left: 28 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
+    const rmaxRaw = Math.max(...points.map(p => p.r));
+    const rmax = Math.max(2, Math.ceil(rmaxRaw));
+    const rY = (r) => rainY1 - (r / rmax) * rainH;
 
-    const temps = hours.map(h => h.temperature);
-    const precip = hours.map(h => h.precipitation);
-    const maxT = Math.max(...temps);
-    const minT = Math.min(...temps);
-    const maxP = Math.max(...precip, 0.2);
+    const xs = points.map((_, i) => padL + (i / (points.length - 1)) * iw);
 
-    const xScale = i => padding.left + (chartW * i) / Math.max(hours.length - 1, 1);
-    const yScale = v => {
-      const n = (v - minT) / Math.max(maxT - minT, 1);
-      return padding.top + chartH - (n * chartH * 0.82 + chartH * 0.08);
+    const NS = "http://www.w3.org/2000/svg";
+    const setChildren = (id, nodes) => {
+      const g = document.getElementById(id);
+      if (!g) return;
+      g.innerHTML = "";
+      nodes.forEach(n => g.appendChild(n));
     };
-    const linePath = vals =>
-      vals.map((v, i) => (i === 0 ? "M" : "L") + " " + xScale(i).toFixed(2) + " " + yScale(v).toFixed(2)).join(" ");
-    const precipScale = v => (v / maxP) * (chartH * 0.36);
+    const svgEl = (name, attrs, text) => {
+      const n = document.createElementNS(NS, name);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      if (text != null) n.textContent = text;
+      return n;
+    };
 
-    const guideLines = Array.from({ length: 4 }, (_, i) => {
-      const y = padding.top + (chartH * i) / 3;
-      return '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3 4" />';
-    }).join("");
+    // Natt-bånd (20:00–06:00)
+    const nightNodes = [];
+    let start = null;
+    for (let i = 0; i < points.length; i++) {
+      const isNight = points[i].hour >= 20 || points[i].hour < 6;
+      if (isNight && start === null) start = i;
+      if ((!isNight || i === points.length - 1) && start !== null) {
+        const endI = isNight ? i : i - 1;
+        const x0 = xs[start];
+        const x1 = xs[endI];
+        nightNodes.push(svgEl("rect", {
+          x: x0, y: padT,
+          width: Math.max(1, x1 - x0),
+          height: tempH + rainH + (rainY0 - (padT + tempH)),
+          fill: "currentColor", "fill-opacity": "0.05",
+        }));
+        start = null;
+      }
+    }
+    setChildren("wx-night", nightNodes);
 
-    const hourLabels = hours
-      .filter((_, i) => i % 4 === 0)
-      .map((h, i) => '<text class="weather-hour-label" x="' + xScale(i * 4) + '" y="' + (height - 10) + '" text-anchor="middle">' + h.label + '</text>')
-      .join("");
+    // Dag-separator ved midnatt + dag-etiketter
+    const dayNodes = [];
+    const dayLabelNodes = [];
+    const firstMidnight = points.findIndex((p, i) => i > 0 && p.hour === 0);
+    const todayStart = xs[0];
+    const formatDayLabel = (date) => {
+      const idx = (date.getDay() + 6) % 7;
+      return `${WEEKDAYS_SHORT[idx]} ${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}`;
+    };
 
-    const weatherIcons = hours
-      .filter((_, i) => i % 4 === 0)
-      .map((h, i) => getWeatherIconSvg(h.weatherCode, xScale(i * 4), 14))
-      .join("");
+    if (firstMidnight > 0) {
+      const sepX = xs[firstMidnight];
+      dayNodes.push(svgEl("line", {
+        x1: sepX, x2: sepX,
+        y1: padT, y2: rainY1,
+        stroke: "currentColor", "stroke-opacity": "0.35",
+        "stroke-dasharray": "3 3", "stroke-width": "1",
+      }));
+      dayLabelNodes.push(svgEl("text", {
+        x: (todayStart + sepX) / 2, y: padT - 6,
+        "text-anchor": "middle",
+      }, formatDayLabel(points[0].date)));
+      dayLabelNodes.push(svgEl("text", {
+        x: (sepX + xs[xs.length - 1]) / 2, y: padT - 6,
+        "text-anchor": "middle",
+      }, formatDayLabel(points[firstMidnight].date)));
+    } else {
+      dayLabelNodes.push(svgEl("text", {
+        x: (todayStart + xs[xs.length - 1]) / 2, y: padT - 6,
+        "text-anchor": "middle",
+      }, formatDayLabel(points[0].date)));
+    }
+    setChildren("wx-daysep", dayNodes);
+    setChildren("wx-days", dayLabelNodes);
 
-    const tempLabels = [Math.round(maxT), Math.round((maxT + minT) / 2), Math.round(minT)]
-      .map((label, i) => {
-        const y = padding.top + (chartH * i) / 2;
-        return '<text class="weather-axis-label" x="4" y="' + (y + 4) + '">' + label + '\u00b0</text>';
-      })
-      .join("");
+    // Horisontalt rutenett for temp (hver 3°)
+    const gridNodes = [];
+    const yLeftNodes = [];
+    for (let t = tmin; t <= tmax; t += 3) {
+      const y = tY(t);
+      gridNodes.push(svgEl("line", {
+        x1: padL, x2: W - padR, y1: y, y2: y,
+        stroke: "currentColor", "stroke-opacity": t === 0 ? "0" : "0.08",
+        "stroke-width": "1",
+      }));
+      yLeftNodes.push(svgEl("text", {
+        x: padL - 4, y: y + 3,
+        "text-anchor": "end",
+      }, t + "\u00b0"));
+    }
+    setChildren("wx-tgrid", gridNodes);
+    setChildren("wx-yleft", yLeftNodes);
 
-    const precipBars = hours.map((h, i) => {
-      const x = xScale(i) - 5;
-      const bh = precipScale(h.precipitation);
-      const y = padding.top + chartH - bh;
-      return '<rect x="' + x + '" y="' + y + '" width="10" height="' + Math.max(bh, 2) + '" rx="4" fill="rgba(121, 199, 255, 0.5)" />';
-    }).join("");
+    // Nullpunkt
+    const zero = document.getElementById("wx-zero");
+    if (zero) {
+      if (tmin <= 0 && tmax >= 0) {
+        zero.setAttribute("x1", padL);
+        zero.setAttribute("x2", W - padR);
+        zero.setAttribute("y1", tY(0));
+        zero.setAttribute("y2", tY(0));
+      } else {
+        zero.setAttribute("x1", -10);
+        zero.setAttribute("x2", -10);
+      }
+    }
 
-    elements.weatherGraph.innerHTML =
-      '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="V\u00e6rgraf for de neste 24 timene">' +
-      '<defs>' +
-      '<linearGradient id="tempLine" x1="0%" y1="0%" x2="100%" y2="0%">' +
-      '<stop offset="0%" stop-color="#ffb703" />' +
-      '<stop offset="100%" stop-color="#ff6b6b" />' +
-      '</linearGradient></defs>' +
-      guideLines + weatherIcons + precipBars +
-      '<path d="' + linePath(temps) + '" fill="none" stroke="url(#tempLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />' +
-      hourLabels + tempLabels +
-      '</svg>';
+    // Y-akse høyre (nedbør)
+    const yRightNodes = [];
+    const rStep = Math.max(1, Math.round(rmax / 2));
+    for (let r = 0; r <= rmax; r += rStep) {
+      const y = rY(r);
+      yRightNodes.push(svgEl("text", {
+        x: W - padR + 4, y: y + 3,
+        "text-anchor": "start",
+      }, r + ""));
+    }
+    yRightNodes.push(svgEl("text", {
+      x: W - padR + 4, y: rainY0 - 4,
+      "text-anchor": "start", "font-weight": "500",
+    }, "mm"));
+    setChildren("wx-yright", yRightNodes);
+
+    // Jevn temperaturkurve (catmull-rom → kubisk bezier)
+    const pts = xs.map((x, i) => [x, tY(points[i].t)]);
+    let tpath = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      tpath += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+    }
+    const lineEl = document.getElementById("wx-temp-line");
+    if (lineEl) lineEl.setAttribute("d", tpath);
+
+    const areaPath = `${tpath} L ${pts[pts.length - 1][0]} ${tempY1} L ${pts[0][0]} ${tempY1} Z`;
+    const areaEl = document.getElementById("wx-temp-area");
+    if (areaEl) areaEl.setAttribute("d", areaPath);
+
+    // Regnareal
+    const rpts = xs.map((x, i) => [x, rY(points[i].r)]);
+    let rpath = `M ${rpts[0][0]} ${rainY1}`;
+    rpts.forEach(p => { rpath += ` L ${p[0]} ${p[1]}`; });
+    rpath += ` L ${rpts[rpts.length - 1][0]} ${rainY1} Z`;
+    const rainEl = document.getElementById("wx-rain");
+    if (rainEl) rainEl.setAttribute("d", rpath);
+
+    // Min/max-etiketter + "Nå"-markør
+    const labelNodes = [];
+    const maxIdx = tvals.indexOf(rawMax);
+    const minIdx = tvals.indexOf(rawMin);
+    [maxIdx, minIdx].forEach(i => {
+      if (i < 0) return;
+      labelNodes.push(svgEl("text", {
+        x: xs[i], y: tY(points[i].t) - 7,
+        "text-anchor": "middle", fill: "var(--accent)",
+      }, Math.round(points[i].t) + "\u00b0"));
+    });
+    labelNodes.push(svgEl("circle", {
+      cx: xs[0], cy: tY(points[0].t), r: 3.5,
+      fill: "var(--accent)",
+    }));
+    labelNodes.push(svgEl("text", {
+      x: xs[0] + 6, y: tY(points[0].t) - 7,
+      "text-anchor": "start", fill: "var(--accent)",
+      "font-size": "9", "letter-spacing": ".12em",
+    }, "N\u00c5"));
+    setChildren("wx-labels", labelNodes);
+
+    // Tidsetiketter (hver 3. time)
+    const xNodes = [];
+    points.forEach((p, i) => {
+      if (p.hour % 3 !== 0 && i !== 0 && i !== points.length - 1) return;
+      xNodes.push(svgEl("text", {
+        x: xs[i], y: H - 10,
+        "text-anchor": i === 0 ? "start" : (i === points.length - 1 ? "end" : "middle"),
+      }, pad2(p.hour)));
+    });
+    setChildren("wx-xlabels", xNodes);
+
+    // Oppdater range-etikett
+    const rangeEl = document.getElementById("chart-range");
+    if (rangeEl) rangeEl.textContent = `${Math.round(rawMax)}\u00b0 \u2014 ${Math.round(rawMin)}\u00b0`;
   }
 
-  function renderNews(elements, items) {
-    elements.newsList.innerHTML = "";
-    if (!items.length) {
-      elements.newsStatus.textContent = "Fant ingen NRK-saker akkurat n\u00e5.";
-      return;
-    }
-    elements.newsStatus.textContent = "";
-    items.forEach(item => {
-      const frag = elements.newsItemTemplate.content.cloneNode(true);
-      const link = frag.querySelector(".news-item");
-      link.href = item.link;
-      frag.querySelector(".news-source").textContent = item.sourceLabel;
-      frag.querySelector(".news-title").textContent = item.title;
-      elements.newsList.appendChild(frag);
-    });
+  /* ---------- NEWS (med rotasjon) ---------- */
+
+  const newsState = {
+    items: [],
+    pageSize: 5,
+    currentPage: 0,
+  };
+
+  function formatNewsTime(dateText) {
+    if (!dateText) return "";
+    const d = new Date(dateText);
+    if (Number.isNaN(d.getTime())) return "";
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
   }
 
   function formatNewsTimestamp(dateText) {
-    if (!dateText) return "NRK Nyheter";
-    const publishedAt = new Date(dateText);
-    if (Number.isNaN(publishedAt.getTime())) return "NRK Nyheter";
-    return "NRK Nyheter \u00b7 " + publishedAt.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
+    // Kompatibilitet med services.js - returnerer bare tid
+    return formatNewsTime(dateText);
   }
 
-  function formatUpdatedLabel(date, stale = false) {
-    if (!date) return "Oppdaterer...";
-    const prefix = stale ? "Sist lagret" : "Oppdatert";
-    return prefix + " " + date.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
+  function renderNews(elements, items) {
+    // items kommer fra services.js med { title, link, sourceLabel } der sourceLabel er tid fra formatNewsTimestamp
+    newsState.items = items.map(item => ({
+      time: item.sourceLabel || formatNewsTime(item.publishedAt),
+      head: item.title,
+      link: item.link,
+    }));
+    newsState.currentPage = 0;
+    renderNewsPage(elements);
+  }
+
+  function renderNewsPage(elements) {
+    const list = elements.newsList;
+    const items = newsState.items;
+    const pages = Math.max(1, Math.ceil(items.length / newsState.pageSize));
+    if (newsState.currentPage >= pages) newsState.currentPage = 0;
+
+    const start = newsState.currentPage * newsState.pageSize;
+    const slice = items.slice(start, start + newsState.pageSize);
+
+    list.innerHTML = "";
+    if (!slice.length) {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="time"></span><span class="head"><em>Ingen nyheter akkurat n\u00e5</em></span>';
+      list.appendChild(li);
+    } else {
+      slice.forEach(n => {
+        const li = document.createElement("li");
+        const time = document.createElement("span");
+        time.className = "time";
+        time.textContent = n.time || "";
+        const head = document.createElement("span");
+        head.className = "head";
+        head.textContent = n.head;
+        li.appendChild(time);
+        li.appendChild(head);
+        list.appendChild(li);
+      });
+    }
+
+    // Retrigger animasjon
+    list.style.animation = "none";
+    void list.offsetHeight;
+    list.style.animation = "";
+
+    elements.newsPage.textContent = `${newsState.currentPage + 1}/${pages}`;
+    const dots = elements.newsDots;
+    dots.innerHTML = "";
+    for (let i = 0; i < pages; i++) {
+      const d = document.createElement("span");
+      d.className = "dot" + (i === newsState.currentPage ? " on" : "");
+      dots.appendChild(d);
+    }
+  }
+
+  function rotateNewsPage(elements) {
+    const items = newsState.items;
+    const pages = Math.max(1, Math.ceil(items.length / newsState.pageSize));
+    if (pages <= 1) return;
+    newsState.currentPage = (newsState.currentPage + 1) % pages;
+    renderNewsPage(elements);
+  }
+
+  /* ---------- NOTICE ---------- */
+
+  function renderNotice(elements, notice) {
+    if (!notice) {
+      elements.notice.hidden = true;
+      return;
+    }
+    elements.notice.hidden = false;
+    elements.noticeTag.textContent = notice.tag;
+    elements.noticeMsg.textContent = notice.msg;
+  }
+
+  /* ---------- LIVE-STATUS ---------- */
+
+  function setLiveStatus(elements, level) {
+    // level: 'ok' | 'warn' | 'err'
+    const dot = elements.liveDot;
+    const label = elements.liveLabel;
+    if (!dot || !label) return;
+    dot.classList.remove("warn", "err");
+    if (level === "warn") {
+      dot.classList.add("warn");
+      label.textContent = "Delvis";
+    } else if (level === "err") {
+      dot.classList.add("err");
+      label.textContent = "Offline";
+    } else {
+      label.textContent = "Sanntid";
+    }
   }
 
   function setPanelStaleFlag(panelEl, isStale) {
     if (!panelEl) return;
-    panelEl.classList.toggle("panel-stale", Boolean(isStale));
+    panelEl.classList.toggle("stale", Boolean(isStale));
   }
 
-  // Enkle, morsomme anledninger. Legg til flere fritt.
-  const OCCASIONS = [
-    { month: 1, day: 13, text: "\ud83c\udf69 Nasjonal kakefredag" }, // 13. januar
-    { month: 2, day: 14, text: "\u2764\ufe0f Valentinsdagen" },
-    { month: 3, day: 8,  text: "\u2640\ufe0f Internasjonal kvinnedag" },
-    { month: 3, day: 14, text: "\ud83e\udd67 Pi-dagen" },
-    { month: 5, day: 1,  text: "\ud83d\udee0 Arbeidernes dag" },
-    { month: 5, day: 17, text: "\ud83c\uddf3\ud83c\uddf4 Gratulerer med dagen!" },
-    { month: 6, day: 21, text: "\u2600\ufe0f Sommersolverv" },
-    { month: 8, day: 8,  text: "\ud83d\udc31 Internasjonal kattedag" },
-    { month: 10, day: 4, text: "\ud83e\uddd1\u200d\ud83d\ude80 World Space Week" },
-    { month: 10, day: 31, text: "\ud83c\udf83 Halloween" },
-    { month: 11, day: 11, text: "\ud83c\udf77 Mortensaften" },
-    { month: 12, day: 13, text: "\ud83d\udd6f\ufe0f Lucia" },
-    { month: 12, day: 24, text: "\ud83c\udf84 Julaften" },
-  ];
-
-  function getOccasionForToday() {
-    const now = new Date();
-    const m = now.getMonth() + 1;
-    const d = now.getDate();
-    const dow = now.getDay();
-    // Fredag = kakefredag (hver fredag)
-    if (dow === 5) {
-      return { text: "\ud83c\udf70 Kakefredag p\u00e5 kontoret!" };
-    }
-    return OCCASIONS.find(o => o.month === m && o.day === d) || null;
-  }
-
-  function renderOccasionBanner(elements) {
-    if (!elements.occasionBanner) return;
-    const occasion = getOccasionForToday();
-    if (!occasion) {
-      elements.occasionBanner.hidden = true;
-      elements.occasionBanner.textContent = "";
+  function updateUpdatedLabel(elements, date) {
+    if (!date) {
+      elements.updated.textContent = "--:--";
       return;
     }
-    elements.occasionBanner.hidden = false;
-    elements.occasionBanner.textContent = occasion.text;
+    elements.updated.textContent = pad2(date.getHours()) + ":" + pad2(date.getMinutes());
   }
 
-  // Lys/morkt tema basert paa tid paa dognet
-  function updateTheme() {
-    const hour = new Date().getHours();
-    const isDaytime = hour >= 8 && hour < 17;
-    document.documentElement.classList.toggle("theme-day", isDaytime);
-    document.documentElement.classList.toggle("theme-night", !isDaytime);
+  function updateWeatherStatus(elements, date, stale) {
+    if (!elements.weatherStatusText) return;
+    const prefix = stale ? "lagret" : "oppd.";
+    if (!date) {
+      elements.weatherStatusText.textContent = "yr.no";
+      return;
+    }
+    elements.weatherStatusText.textContent =
+      "yr.no \u00b7 " + prefix + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes());
   }
+
+  /* ---------- THEME ---------- */
+
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    root.classList.toggle("light", theme !== "dark");
+    const btn = document.getElementById("mode-toggle");
+    if (btn) btn.textContent = theme === "dark" ? "Light mode" : "Dark mode";
+  }
+
+  function autoTheme() {
+    const hour = new Date().getHours();
+    // Dag 07:00-17:00, natt ellers. Enkel tilnærming.
+    const theme = (hour >= 7 && hour < 17) ? "light" : "dark";
+    applyTheme(theme);
+    return theme;
+  }
+
+  /* ---------- EXPORT ---------- */
 
   window.JPCRenderers = {
     formatClock,
     formatNewsTimestamp,
-    formatUpdatedLabel,
-    getWeatherSummary,
-    normalizeStaticCopy,
-    normalizeWeatherGraphCopy,
     renderCountdown,
     renderLunch,
     renderLunchError,
-    renderNews,
-    renderOccasionBanner,
+    renderDepartures,
     renderWeather,
     renderWeatherGraph,
-    renderWeeklyMenu,
-    renderWeeklyMenuError,
+    renderNews,
+    rotateNewsPage,
+    renderNotice,
+    setLiveStatus,
     setPanelStaleFlag,
-    updateTheme,
+    updateUpdatedLabel,
+    updateWeatherStatus,
+    applyTheme,
+    autoTheme,
+    getIsoWeek,
+    getWeatherSummary: weatherCodeText,
   };
 }());
