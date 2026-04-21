@@ -189,7 +189,7 @@
     });
   }
 
-  /* ---------- VÆR (siden + graf) ---------- */
+  /* ---------- VÃR (siden + graf) ---------- */
 
   function weatherCodeText(code) {
     const s = {
@@ -282,7 +282,7 @@
       return n;
     };
 
-    // Natt-bånd (20:00–06:00)
+    // Natt-bÃ¥nd (20:00â06:00)
     const nightNodes = [];
     let start = null;
     for (let i = 0; i < points.length; i++) {
@@ -338,7 +338,7 @@
     setChildren("wx-daysep", dayNodes);
     setChildren("wx-days", dayLabelNodes);
 
-    // Horisontalt rutenett for temp (hver 3°)
+    // Horisontalt rutenett for temp (hver 3Â°)
     const gridNodes = [];
     const yLeftNodes = [];
     for (let t = tmin; t <= tmax; t += 3) {
@@ -370,7 +370,7 @@
       }
     }
 
-    // Y-akse høyre (nedbør)
+    // Y-akse hÃ¸yre (nedbÃ¸r)
     const yRightNodes = [];
     const rStep = Math.max(1, Math.round(rmax / 2));
     for (let r = 0; r <= rmax; r += rStep) {
@@ -386,7 +386,7 @@
     }, "mm"));
     setChildren("wx-yright", yRightNodes);
 
-    // Jevn temperaturkurve (catmull-rom → kubisk bezier)
+    // Jevn temperaturkurve (catmull-rom â kubisk bezier)
     const pts = xs.map((x, i) => [x, tY(points[i].t)]);
     let tpath = `M ${pts[0][0]} ${pts[0][1]}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -415,7 +415,7 @@
     const rainEl = document.getElementById("wx-rain");
     if (rainEl) rainEl.setAttribute("d", rpath);
 
-    // Min/max-etiketter + "Nå"-markør
+    // Min/max-etiketter + "NÃ¥"-markÃ¸r
     const labelNodes = [];
     const maxIdx = tvals.indexOf(rawMax);
     const minIdx = tvals.indexOf(rawMin);
@@ -603,7 +603,7 @@
 
   function autoTheme() {
     const hour = new Date().getHours();
-    // Dag 07:00-17:00, natt ellers. Enkel tilnærming.
+    // Dag 07:00-17:00, natt ellers. Enkel tilnÃ¦rming.
     const theme = (hour >= 7 && hour < 17) ? "light" : "dark";
     applyTheme(theme);
     return theme;
