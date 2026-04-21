@@ -145,7 +145,7 @@
     const PAGES = [
       {
         title: "JPC infoskjerm",
-        url: "./index.html",
+        url: (location.protocol === "file:" ? "https://krakensaten.github.io/jpc-infoskjerm/index.html" : "./index.html"),
       },
       {
         title: "NOC oversikt",
