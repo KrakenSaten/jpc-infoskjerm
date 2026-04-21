@@ -233,7 +233,7 @@ function refreshAll() {
   loadMenu();
 }
 
-/* ---------- Tema-håndtering ---------- */
+/* ---------- Tema-hÃ¥ndtering ---------- */
 
 function setupThemeHandling() {
   // Les lagret preferanse eller auto-velg
