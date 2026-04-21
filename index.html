@@ -61,6 +61,7 @@
             <span class="status" id="weather-status-text">yr.no</span>
           </h3>
           <div class="now-row">
+            <div class="now-icon" id="now-icon" aria-hidden="true"></div>
             <div class="temp" id="weather-temp">--°</div>
             <div class="desc" id="weather-desc">
               Henter værdata...
@@ -87,6 +88,7 @@
               <path id="wx-rain" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-opacity=".55" stroke-width="1"/>
               <path id="wx-temp-area" fill="url(#tgrad)" stroke="none"/>
               <path id="wx-temp-line" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <g id="wx-icons"></g>
               <g id="wx-labels" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="currentColor"></g>
               <g id="wx-yleft" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".55"></g>
               <g id="wx-yright" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".55"></g>
@@ -102,7 +104,7 @@
 
           <div class="tomorrow">
             <span>I morgen</span>
-            <b id="weather-tomorrow">--° · --</b>
+            <b><span class="tmrw-icon" id="tmrw-icon" aria-hidden="true"></span><span id="weather-tomorrow">--° · --</span></b>
           </div>
         </div>
 
@@ -131,9 +133,9 @@
           </table>
         </div>
 
-        <div class="notice" id="notice" hidden>
-          <div class="tag" id="notice-tag"></div>
-          <div class="msg" id="notice-msg"></div>
+        <div class="notice" id="notice">
+          <div class="tag" id="notice-tag">Melding · kontor</div>
+          <div class="msg" id="notice-msg">André er kul!</div>
         </div>
 
         <div class="card news" id="news-card">
