@@ -14,6 +14,43 @@
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
+
+  /* ---------- WEATHER ICONS ---------- */
+
+  function weatherCodeToCondition(code) {
+    if (code === 0 || code === 1) return "clear";
+    if (code === 2) return "pcloudy";
+    if (code === 3 || code === 45 || code === 48) return "cloudy";
+    if (code >= 51 && code <= 67) return "rain";
+    if (code >= 80 && code <= 82) return "rain";
+    if (code >= 95) return "rain";
+    if (code >= 71 && code <= 77) return "snow";
+    if (code >= 85 && code <= 86) return "snow";
+    return "cloudy";
+  }
+
+  function wxIconSvg(cond, hour) {
+    var night = (hour != null) && (hour >= 20 || hour < 6);
+    var sun = night
+      ? '<circle cx="9" cy="9" r="5" fill="#e8d98a" stroke="#c9b770" stroke-width=".6"/><circle cx="11" cy="7" r="4" fill="var(--paper)"/>'
+      : '<g><circle cx="9" cy="9" r="3.6" fill="#f5b733"/>' +
+        [0,45,90,135,180,225,270,315].map(function(a){
+          var rad = a * Math.PI / 180;
+          var x1 = 9 + Math.cos(rad) * 5, y1 = 9 + Math.sin(rad) * 5;
+          var x2 = 9 + Math.cos(rad) * 7, y2 = 9 + Math.sin(rad) * 7;
+          return '<line x1="'+x1.toFixed(2)+'" y1="'+y1.toFixed(2)+'" x2="'+x2.toFixed(2)+'" y2="'+y2.toFixed(2)+'" stroke="#f5b733" stroke-width="1.4" stroke-linecap="round"/>';
+        }).join('') + '</g>';
+    var cloud = '<path d="M5 12 Q3 12 3 10 Q3 8 5 8 Q5 6 8 6 Q11 6 12 8 Q14 8 14 10 Q14 12 12 12 Z" fill="#cfd3d9" stroke="#8c939e" stroke-width=".6"/>';
+    var rain = '<g stroke="#4aa3d9" stroke-width="1.1" stroke-linecap="round"><line x1="6" y1="13" x2="5" y2="16"/><line x1="9" y1="13" x2="8" y2="16"/><line x1="12" y1="13" x2="11" y2="16"/></g>';
+    var snow = cloud + '<g fill="#fff" stroke="#8c939e" stroke-width=".4"><circle cx="6" cy="14.5" r="1"/><circle cx="9" cy="15" r="1"/><circle cx="12" cy="14.5" r="1"/></g>';
+    if (cond === "clear") return sun;
+    if (cond === "pcloudy") return '<g transform="translate(-2,-1) scale(.9)">' + sun + '</g><g transform="translate(3,4)">' + cloud + '</g>';
+    if (cond === "cloudy") return cloud;
+    if (cond === "rain") return cloud + rain;
+    if (cond === "snow") return snow;
+    return cloud;
+  }
+
   /* ---------- CLOCK ---------- */
 
   function formatClock(elements) {
@@ -225,6 +262,19 @@
     if (days[1]) {
       const tomorrow = days[1];
       elements.weatherTomorrow.textContent = `${Math.round(tomorrow.maxTemp)}\u00b0 \u00b7 ${weatherCodeText(tomorrow.weatherCode ?? 3).toLowerCase()}`;
+
+    // Render weather icons
+    var nowIcon = document.getElementById("now-icon");
+    if (nowIcon) {
+      var cond = weatherCodeToCondition(today.weatherCode);
+      var hour = new Date().getHours();
+      nowIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(cond, hour) + '</svg>';
+    }
+    var tmrwIcon = document.getElementById("tmrw-icon");
+    if (tmrwIcon && days[1]) {
+      var tmrwCond = weatherCodeToCondition(days[1].weatherCode);
+      tmrwIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(tmrwCond, 12) + '</svg>';
+    }
     }
   }
 
@@ -448,6 +498,24 @@
     });
     setChildren("wx-xlabels", xNodes);
 
+    // Condition icons every 3h over the chart
+    var iconNodes = [];
+    var iconY = padT - 2;
+    points.forEach(function(p, i) {
+      if (p.hour % 3 !== 0) return;
+      if (xs[i] < padL + 10 || xs[i] > W - padR - 10) return;
+      var cond = weatherCodeToCondition(p.wc);
+      var g = svgEl("g", { transform: "translate(" + (xs[i] - 9) + ", " + (iconY - 10) + ")" });
+      g.innerHTML = wxIconSvg(cond, p.hour);
+      iconNodes.push(g);
+    });
+    var iconsG = document.getElementById("wx-icons");
+    if (iconsG) {
+      iconsG.innerHTML = "";
+      iconNodes.forEach(function(n) { iconsG.appendChild(n); });
+    }
+
+
     // Oppdater range-etikett
     const rangeEl = document.getElementById("chart-range");
     if (rangeEl) rangeEl.textContent = `${Math.round(rawMax)}\u00b0 \u2014 ${Math.round(rawMin)}\u00b0`;
@@ -631,5 +699,7 @@
     autoTheme,
     getIsoWeek,
     getWeatherSummary: weatherCodeText,
+    wxIconSvg,
+    weatherCodeToCondition,
   };
 }());
