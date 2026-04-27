@@ -1,67 +1,65 @@
 # Team Workflow
 
-Infoskjermen hostes via GitHub Pages på https://krakensaten.github.io/jpc-infoskjerm/ og vises på kontorskjermen.
+Denne guiden forklarer hvordan du gjor vanlige endringer pa infoskjermen.
 
-## Oppdater lunsjmenyen
+## Oppdatere ukens meny
 
-1. Gå til `menu.csv` på GitHub.
-2. Rediger filen direkte i nettleseren (blyant-ikon).
-3. Commit endringen på `main`.
-4. Innen en time henter infoskjermen den nye menyen. Vil du ha den umiddelbart, trykk `R` på tastaturet tilkoblet skjermen.
-
-CSV-formatet:
+1. Ga til [menu.csv pa GitHub](https://github.com/KrakenSaten/jpc-infoskjerm/edit/main/menu.csv)
+2. Endre innholdet til ny uke. Formatet er semikolon-separert:
 
 ```
 week;day;title;allergens
-17;Mandag;Tikka masala med raita, ris og koriander;Melk, hvete
+18;Mandag;Kylling curry med ris, koriander og tempura;Hvete
+18;Tirsdag;Chili con Carne;Melk
 ```
 
-Menyen må matche gjeldende ISO-ukenummer. Hvis ikke, viser skjermen en feilmelding. Dette er bevisst – bedre enn å vise utdaterte retter.
+3. Klikk "Commit changes"
+4. Vent 2-5 minutter, sa oppdateres skjermen automatisk
 
-## Endre koden
+Tips: Komma i rettnavn er OK (vi bruker semikolon som separator).
 
-- Datakilder og intervaller: `config.js`
-- Lasting og normalisering av meny: `menu-loader.js`
-- Henting av T-bane/vær/nyheter: `services.js`
-- Visning (klokke, lunsj, vær, nyheter, anledninger): `renderers.js`
-- Oppstart og orkestrering: `app.js`
-- Visuell utforming: `styles.css`
-- Struktur: `index.html`
+## Endre kontorbeskjed
+
+1. Ga til [index.html pa GitHub](https://github.com/KrakenSaten/jpc-infoskjerm/edit/main/index.html)
+2. Sok etter `notice-msg` (Ctrl+F)
+3. Endre teksten mellom `>` og `</div>`
+4. For a skjule meldingen helt, legg til `hidden` pa notice-div
+
+## Bruke Claude til endringer
+
+Du kan be Claude i chatten om a gjore endringer direkte. Eksempler:
+
+- "Oppdater menyen til uke 19" (med bilde av menyen)
+- "Endre kontorbeskjeden til: Husk fredagspils!"
+- "Skjul kontorbeskjeden"
+- "Endre nedtellingen til ny dato"
+
+Claude redigerer filene direkte pa GitHub via nettleseren.
+
+## Filer du vanligvis endrer
+
+| Fil | Nar |
+|---|---|
+| `menu.csv` | Ny ukemeny |
+| `index.html` | Kontorbeskjed, layout-endringer |
+| `config.js` | API-endepunkter, nedtellingsdato, intervaller |
+
+## Filer du sjelden endrer
+
+| Fil | Innhold |
+|---|---|
+| `styles.css` | All styling (light/dark mode, layout) |
+| `renderers.js` | Rendering av paneler (vaergraf, nyheter, T-bane) |
+| `app.js` | Hovedlogikk, intervaller, hurtigtaster |
+| `services.js` | API-kall (Entur, Open-Meteo, NRK) |
+| `menu-loader.js` | Parsing av menu.csv |
 
 ## Lokal testing
 
-Selv om siden er live på GitHub Pages, kan du teste endringer lokalt før commit:
+Kjor `start-preview.bat` for lokal preview pa `localhost:8181`. For rotatoren, kjor `start-rotator-preview.bat`.
 
-- `start-preview.bat` starter lokal server og åpner infoskjermen.
-- `start-rotator-preview.bat` gjør det samme for rotatoren.
-- Lokal preview bruker `http://localhost:8181` slik at `fetch()` av menyfiler fungerer.
+Hvis du apner filene direkte som `file://`, vil API-kall feile pga. CORS. Bruk alltid preview-serveren.
 
-Unngå å åpne HTML-filene direkte med dobbeltklikk – `file://`-protokoll blokkerer nødvendige fetch-kall.
+## Deploy
 
-## Rotatoren
-
-`rotator.html` veksler mellom infoskjermen og NOC-siden (`inm.jpc.no:8080`) via iframe. Den må kjøres lokalt på kontorskjermen fordi:
-
-- NOC-siden er kun tilgjengelig på kontorets nettverk.
-- iframe-innbygging av GitHub Pages-sider kan blokkeres av sikkerhetshoder utenfor samme domene.
-
-Start rotatoren med `start-rotator.bat` på skjerm-PC-en.
-
-## Enkle teamregler
-
-- Raske innholdsoppdateringer skjer i `menu.csv` – ikke rør koden.
-- Unngå å endre flere ting samtidig hvis du bare skal oppdatere lunsj.
-- Test via preview-scriptet før du committer større endringer.
-- Behold filnavn og enkle relative stier.
-
-## Hurtigtaster
-
-- `R` – oppdater alle paneler umiddelbart
-- `F` – veksle fullskjerm
-
-## Tekniske noter
-
-- `.editorconfig` sørger for felles tegnsett, innrykk og linjeslutter.
-- `.gitattributes` reduserer støy fra CRLF/LF i diff-er.
-- Skjermen bruker `localStorage` som fallback ved nettverksfeil, og viser "Lagret data"-indikator på berørte paneler.
-- Tema (dag/natt) veksler automatisk basert på klokkeslett.
+Alt deployes automatisk via GitHub Pages. Commit til `main` = live pa 2-5 minutter. Ingen build-steg.
