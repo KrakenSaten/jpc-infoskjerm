@@ -23,7 +23,7 @@
       news: 10 * 60 * 1_000,
       menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
     }),
-    jubileeDepartureDate: new Date("2026-05-08T13:30:00+02:00"),
+    jubileeDepartureDate: new Date("2026-05-16T16:00:00+02:00"),
     jubileeLabel: "Kakebit 🎂",
     nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
     menuGithubUrl: MENU_GITHUB_URL,
