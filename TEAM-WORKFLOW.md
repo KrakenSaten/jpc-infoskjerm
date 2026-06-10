@@ -9,14 +9,18 @@ Denne guiden forklarer hvordan du gjor vanlige endringer pa infoskjermen.
 
 ```
 week;day;title;allergens
-18;Mandag;Kylling curry med ris, koriander og tempura;Hvete
-18;Tirsdag;Chili con Carne;Melk
+24;Mandag;Carbonara - med cherrytomat og persille;Hvete, Melk
+24;Tirsdag;Chili con Carne - med ris og roemme;Melk
 ```
 
 3. Klikk "Commit changes"
-4. Vent 2-5 minutter, sa oppdateres skjermen automatisk
+4. Vent 2-5 minutter (GitHub Pages-cache), sa oppdaterer skjermen seg selv.
+   Skjermen sjekker ogsa for nye commits hver time og reloader automatisk.
 
-Tips: Komma i rettnavn er OK (vi bruker semikolon som separator).
+Tips:
+- Komma i rettnavn er OK (vi bruker semikolon som separator)
+- Bruk formatet "Rett - beskrivelse" (bindestrek/tankestrek med mellomrom rundt).
+  Da vises retten som stor tittel og beskrivelsen i kursiv under.
 
 ## Endre kontorbeskjed
 

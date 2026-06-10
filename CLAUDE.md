@@ -30,7 +30,7 @@ Vanilla JS, ingen build-steg, ingen npm. Alt deployes direkte via GitHub Pages.
 - config.js - Innstillinger (API-endepunkter, koordinater, intervaller)
 - services.js - API-kall til Entur GraphQL, Open-Meteo, NRK RSS
 - menu-loader.js - Laster og parser menu.csv (semikolon-separert)
-- menu.csv - Ukens meny (semikolon-separert, IKKE komma)
+- menu.csv - Ukens meny (semikolon-separert, IKKE komma). Eneste menykilde: GitHub raw -> lokal csv (menu.json er fjernet)
 - rotator.html - Iframe-rotator for kiosk
 
 ### Datakilder
@@ -58,6 +58,7 @@ I index.html, finn id="notice-msg" og endre teksten. hidden-attributt skjuler.
 
 ### Endre nedtellingsdato
 I config.js, endre jubileeDepartureDate og jubileeLabel (label vises som tittel pa nedtellingen).
+Etter utlop blir nedtellingen staaende paa 00 00 00 00 - klar for ny dato/label i config.js.
 
 ### Lunsjlogikk
 - Servering 11:00-13:00 (status i lunsjkortet folger dette)
@@ -77,7 +78,7 @@ I config.js, endre jubileeDepartureDate og jubileeLabel (label vises som tittel 
 
 ## Kiosk-modus
 
-- ?kiosk=1 skjuler mode-toggle
+- ?kiosk=1 skjuler mode-toggle, gir full-bleed uten preview-ramme, og temaet folger alltid auto dag/natt (manuelt T-trykk lagres ikke)
 - Auto dark mode 17:00-07:00
 - Auto-reload kl 04:00
 - Hurtigtaster: R (refresh), F (fullscreen), T (tema)

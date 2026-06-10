@@ -1,8 +1,7 @@
 (function initConfig() {
 // Hvor henter vi menyen fra?
-// 1. GitHub (alltid oppdatert) - denne er primaerkilden
+// 1. GitHub raw (alltid oppdatert) - primaerkilden
 // 2. Lokal menu.csv - hvis GitHub ikke er tilgjengelig
-// 3. Lokal menu.json - siste fallback
 //
 // Fallback-menyen i koden er bevisst fjernet: hvis ingen kilde har meny
 // for gjeldende uke, skal skjermen vise en tydelig feilmelding i stedet

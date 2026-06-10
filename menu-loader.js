@@ -150,12 +150,6 @@
     return parseMenuCsv(await response.text());
   }
 
-  async function fetchLocalJson() {
-    const response = await fetch("menu.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    return normalizeMenuData(await response.json());
-  }
-
   // Last meny i prioritert rekkefolge. Kaster feil om ingen kilde har meny
   // for gjeldende uke (brukes for aa vise tydelig feilmelding paa skjermen).
   async function loadMenuFromSources() {
@@ -167,7 +161,6 @@
       attempts.push(
         { name: "github", fn: fetchFromGithub },
         { name: "csv",    fn: fetchLocalCsv },
-        { name: "json",   fn: fetchLocalJson },
       );
     } else {
       // Kjorer fra fil:// - fetch til andre filer er blokkert av nettleser

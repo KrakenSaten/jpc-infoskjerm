@@ -145,7 +145,8 @@ async function loadMenu() {
     const updatedAt = new Date();
     writeCache(CACHE_KEYS.menu, { menu, fetchedAt: updatedAt.toISOString() });
     setSourceUpdate("menu", updatedAt, !isCurrentWeek);
-  } catch {
+  } catch (error) {
+    console.warn("Meny: henting feilet, bruker cache om mulig.", error);
     const cached = readCache(CACHE_KEYS.menu);
     const cachedMenu = cached?.menu;
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
@@ -168,7 +169,8 @@ async function fetchDepartures() {
     renderDepartures(elements, departures);
     writeCache(CACHE_KEYS.departures, { items: departures, fetchedAt: updatedAt.toISOString() });
     setSourceUpdate("departures", updatedAt, false);
-  } catch {
+  } catch (error) {
+    console.warn("T-bane: henting feilet, bruker cache om mulig.", error);
     const cached = readCache(CACHE_KEYS.departures);
     const items = cached?.items || [];
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
@@ -190,7 +192,8 @@ async function fetchWeather() {
       fetchedAt: updatedAt.toISOString(),
     });
     setSourceUpdate("weather", updatedAt, false);
-  } catch {
+  } catch (error) {
+    console.warn("V\u00e6r: henting feilet, bruker cache om mulig.", error);
     const cached = readCache(CACHE_KEYS.weather);
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
     if (cached) {
@@ -214,7 +217,8 @@ async function fetchNews() {
       String(updatedAt.getMinutes()).padStart(2, "0");
     writeCache(CACHE_KEYS.news, { items, fetchedAt: updatedAt.toISOString() });
     setSourceUpdate("news", updatedAt, false);
-  } catch {
+  } catch (error) {
+    console.warn("Nyheter: henting feilet, bruker cache om mulig.", error);
     const cached = readCache(CACHE_KEYS.news);
     const items = cached?.items || [];
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
@@ -238,39 +242,46 @@ function refreshAll() {
 /* ---------- Tema-haandtering ---------- */
 
 function setupThemeHandling() {
-  // Les lagret preferanse eller auto-velg
-  const saved = localStorage.getItem("jpc-theme");
+  // Kiosk-modus via ?kiosk=1
+  const params = new URLSearchParams(window.location.search);
+  const isKiosk = params.get("kiosk") === "1";
+  if (isKiosk) {
+    document.body.classList.add("kiosk");
+  }
+
+  // Kiosk foelger alltid auto dag/natt. Uten dette ville ett trykk paa
+  // T/toggle lagret tema permanent og laast skjermen i en modus for alltid.
+  const saved = isKiosk ? null : localStorage.getItem("jpc-theme");
   if (saved === "light" || saved === "dark") {
     applyTheme(saved);
   } else {
     autoTheme();
   }
 
-  // Manuell toggle
-  elements.modeToggle.addEventListener("click", () => {
+  const toggleTheme = () => {
     const isDark = document.documentElement.classList.contains("dark");
     const next = isDark ? "light" : "dark";
     applyTheme(next);
-    localStorage.setItem("jpc-theme", next);
-  });
+    if (!isKiosk) {
+      localStorage.setItem("jpc-theme", next);
+    }
+  };
 
-  // Auto-veksle hvis ikke manuell preferanse er satt
+  elements.modeToggle.addEventListener("click", toggleTheme);
+
+  // Auto-veksle naar ingen manuell preferanse styrer (kiosk: alltid)
   window.setInterval(() => {
-    if (!localStorage.getItem("jpc-theme")) {
+    if (isKiosk || !localStorage.getItem("jpc-theme")) {
       autoTheme();
     }
   }, 15 * 60 * 1000);
 
-  // Kiosk-modus via ?kiosk=1
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("kiosk") === "1") {
-    document.body.classList.add("kiosk");
-  }
+  return toggleTheme;
 }
 
 /* ---------- Hurtigtaster + lyttere ---------- */
 
-function setupKeyboardShortcuts() {
+function setupKeyboardShortcuts(toggleTheme) {
   document.addEventListener("keydown", (e) => {
     const target = e.target;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
@@ -283,10 +294,7 @@ function setupKeyboardShortcuts() {
       toggleFullscreen();
     } else if (key === "t") {
       e.preventDefault();
-      const isDark = document.documentElement.classList.contains("dark");
-      const next = isDark ? "light" : "dark";
-      applyTheme(next);
-      localStorage.setItem("jpc-theme", next);
+      toggleTheme();
     }
   });
 }
@@ -348,16 +356,16 @@ async function checkForNewVersion() {
 /* ---------- Oppstart ---------- */
 
 async function init() {
-  setupThemeHandling();
-  setupKeyboardShortcuts();
+  const toggleTheme = setupThemeHandling();
+  setupKeyboardShortcuts(toggleTheme);
   setupVisibilityHandler();
   scheduleNightlyReload();
 
   formatClock(elements);
   renderCountdown(elements, JUBILEE_DEPARTURE_DATE, JUBILEE_LABEL);
 
-  // Initiell data-henting
-  await loadMenu();
+  // Initiell data-henting (parallelt)
+  loadMenu();
   fetchDepartures();
   fetchWeather();
   fetchNews();

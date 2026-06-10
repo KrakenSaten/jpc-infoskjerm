@@ -1,117 +1,100 @@
 # QA Checklist
 
-Bruk denne manuelle testen etter oppdateringer i infoskjermen.
+Manuell test etter endringer paa infoskjermen. Oppdatert juni 2026 - matcher
+dagens layout (v3: lunsj/vaer venstre, T-bane/beskjed/nyheter hoyre, nedtelling nederst).
 
 ## Foer du starter
 
 1. Start lokal preview med `start-preview.bat`.
 2. Aapne `http://localhost:8181/index.html`.
-3. Hvis du tester rotatoren, start ogsaa `start-rotator-preview.bat`.
+3. For rotatoren: `start-rotator-preview.bat` (NB: NOC-siden krever lokal kjoering, se kommentar i rotator.html).
 
 ## Rask smoke test
 
-Kjoer denne foerst. Hvis noe feiler her, stopp og rett feilen foer videre test.
+Kjoer denne foerst. Feiler noe her, stopp og rett foer videre test.
 
-1. Siden aapner uten blank skjerm eller feilside.
-2. Layouten ser ryddig ut baade paa stor skjerm og i et smalere vindu.
-3. Klokke, dato og uke vises i toppen.
-4. Systemstatus viser ikke fast "Laster data..." i mer enn kort tid.
-5. T-bane, vaer, nyheter og lunsj viser innhold eller en fornuftig fallback-melding.
-6. Ingen tekst viser rare tegn eller oedelagte bokstaver.
+1. Siden aapner uten blank skjerm og uten feil i konsollen (F12).
+2. Klokke, dato og ukenummer vises i toppen og klokken tikker.
+3. Statuslinjen under toppen viser "Sanntid" (groenn prikk) etter kort tid.
+4. Alle paneler viser innhold eller en fornuftig fallback-melding.
+5. Ingen rare tegn eller oedelagte bokstaver (ae/oe/aa, tankestrek).
 
 ## Paneltest
 
-### Toppfelt
+### Toppfelt og statuslinje
 
-1. JPC-logoen og tittelen `Skullerud live` vises riktig.
-2. Dato stemmer med dagens dato.
-3. Klokkeslett oppdaterer seg av seg selv.
-4. Ukenummer ser riktig ut.
-5. Statuslinjen viser enten at alt er oppdatert eller at lagrede data brukes.
+1. JPC-logo og "Skullerud live" vises.
+2. Dato og ukenummer stemmer.
+3. "Oppdatert HH:MM" endres etter at data er hentet.
+4. Prikken er groenn (alt ok), gul (noe stale/mangler) eller roed (3+ kilder mangler).
 
-### T-bane
+### Lunsj
 
-1. Panelet `Skullerud T-bane` vises.
-2. Det finnes opptil to retninger med avganger.
-3. Hver avgang viser linjenummer, destinasjon, klokkeslett og nedtelling.
-4. Forsinkede avganger vises som forsinket, hvis API-et returnerer det.
-5. `Oppdatert`-teksten endres etter at data er hentet.
-6. Hvis sanntid ikke kan hentes, vises en tydelig fallback-melding.
-
-### Nyheter
-
-1. `Siste fra NRK` viser flere saker.
-2. Hver sak har kilde/tid og tittel.
-3. Det gaar an aa klikke paa en sak og aapne lenken.
-4. Ved nettverksfeil vises enten lagrede saker eller en tydelig feilmelding.
-
-### Jubileum
-
-1. `30 aars jubileum` vises riktig.
-2. Teksten `JPC AS · Tur til Brussel` vises uten rare tegn.
-3. Nedtellingen viser dager, timer og minutter.
-4. Underteksten med avreisetidspunkt vises.
+1. Riktig rett for dagens ukedag fra menu.csv, med beskrivelse i kursiv under
+   (tittelformat "Rett - beskrivelse" deles ved tankestreken).
+2. Allergener vises som "Allergier: ...".
+3. Status foelger klokken: foer 11:00 "Servering 11:00", 11-13 "Servering naa",
+   13-14 "Servering ferdig", 14-17 "Ferdig for i dag".
+4. Helg viser "Stengt i helg", helligdag viser "Stengt - helligdag".
+5. Man-tor: "I morgen" viser neste dags rett. Fre/helg: "Neste arbeidsdag"
+   viser "Ny meny kommer" (menyen finnes bare for innevaerende uke).
+6. Mangler meny for uken: tydelig feilmelding "Meny mangler for denne uken".
 
 ### Vaer
 
-1. Panelet `Skullerud` viser kort for i dag og i morgen.
-2. Hvert kort viser sammendrag, temperatur og vind/nedboer.
-3. Grafen vises under vaerkortene.
-4. Grafen inneholder temperaturkurve, nedboersoyler og vaerikoner.
-5. `Oppdatert`-teksten endres etter henting.
-6. Ved feil vises lagrede data eller en tydelig feilmelding.
+1. Temperatur, beskrivelse og ikon for naa - ikonet skal matche faktisk vaer
+   (ikke alltid sky!). Kilde-label sier "Open-Meteo".
+2. Grafen viser temperaturkurve, nedboer, natt-baand og ikoner per 3. time.
+3. "I morgen"-raden viser temperatur + beskrivelse + ikon.
+4. Ved nettverksfeil: lagrede data vises og status blir gul/"lagret HH:MM".
 
-### Lunsj i dag
+### T-bane
 
-1. Panelet `I dag` viser riktig dag.
-2. Rett og allergier stemmer med `menu.csv`.
-3. Teksten ser riktig ut uten rare tegn.
+1. Inntil 5 avganger med linjebadge, retning og nedtelling/klokkeslett.
+2. Avganger < 3 min markeres, forsinkede vises i varselfarge.
+3. Ved avvik fra Entur vises en varsel-rad nederst i tabellen.
+4. Ved feil: lagrede avganger eller "Ingen avganger akkurat naa".
 
-### Lunsj i morgen
+### Kontorbeskjed
 
-1. Panelet `I morgen` viser riktig neste arbeidsdag i menyen.
-2. Rett og allergier stemmer med `menu.csv`.
-3. Hvis det ikke finnes meny for dagen, vises en fornuftig fallback-tekst.
+1. Beskjeden i index.html (id="notice-msg") vises med tag.
+2. `hidden`-attributt paa notice-div skjuler den.
 
-### Ukemeny
+### Nyheter
 
-1. `Ukemeny` viser riktig ukenummer.
-2. Alle fem arbeidsdager vises i riktig rekkefolge.
-3. Hver dag viser rett og allergier.
-4. Infoteksten under ukeoverskriften nevner `menu.csv`.
+1. 10 saker fra NRK fordelt paa 2 sider a 5, roterer hvert 15. sekund.
+2. Sidetall (1/2) og prikker nederst foelger rotasjonen.
+3. Sakene er IKKE klikkbare (kioskvisning) - kun tid + tittel.
+4. Ved feil: lagrede saker eller "Ingen nyheter akkurat naa".
 
-## Datatest for meny
+### Nedtelling
 
-Bruk denne etter endring i lunsj.
+1. Tittelen kommer fra jubileeLabel i config.js.
+2. Telleren teller ned hvert sekund.
+3. Etter utloep blir den staaende paa 00 00 00 00 (klar for ny dato i config.js).
 
-1. Endre en rett i `menu.csv`.
-2. Last siden paanytt.
-3. Bekreft at `I dag`, `I morgen` og `Ukemeny` viser den nye teksten.
-4. Bekreft at det ikke er nodvendig aa endre `menu.json` for at oppdateringen skal slaa inn.
+## Kiosk-modus (?kiosk=1)
 
-## Rotatortest
+1. Mode-toggle-knappen er skjult.
+2. Visningen fyller hele skjermen uten graa ramme rundt.
+3. Tema bytter automatisk (lys 07-17, moerk ellers). Trykk T: temaet bytter
+   midlertidig, men gaar tilbake til auto innen 15 min (lagres ikke).
 
-1. Start `start-rotator-preview.bat`.
-2. Bekreft at rotatoren aapner.
-3. Bekreft at overlay viser sidetittel og nedtelling.
-4. Bekreft at infoskjermen kan lastes i rotatoren.
-5. Hvis ekstern side ikke kan iframe-vises, bekreft at fallback-meldingen er forstaaelig.
+## Watchdog og reload
+
+1. Skjermen reloader automatisk kl 04:00.
+2. Skjermen sjekker siste commit paa main hver time og reloader ved ny commit
+   (test: push en commit, vent inntil en time, bekreft reload).
 
 ## Fallback-test
 
-Kjoer denne ved stoerre endringer eller foer produksjonsbruk.
-
-1. Start siden med lokal preview.
-2. Koble fra nettverk midlertidig, eller blokker eksterne kall hvis mulig.
-3. Last siden paanytt.
-4. Bekreft at skjermen fortsatt viser fornuftige meldinger eller lagrede data.
-5. Bekreft at siden ikke blir blank selv om API-kall feiler.
+1. Koble fra nettverk og last siden paa nytt.
+2. Paneler viser lagrede data (gul status) eller tydelige feilmeldinger.
+3. Siden blir aldri blank.
 
 ## Godkjenningsregel
 
-Endringen er klar til bruk naar:
-
-1. Smoke test er bestaatt.
-2. Alle relevante paneler for endringen er testet.
-3. Ingen rare tegn eller tydelige layoutfeil er synlige.
-4. Preview fungerer lokalt uten blank skjerm.
+1. Smoke test bestaatt.
+2. Alle paneler beroert av endringen er testet.
+3. Ingen rare tegn eller layoutfeil.
+4. Konsollen er fri for ukjente feil (console.warn ved nettverksfeil er OK).

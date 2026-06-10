@@ -142,6 +142,10 @@
   <script>
     const ROTATION_MS = 60_000;
     const EXTERNAL_PAGE_TIMEOUT_MS = 8_000;
+    // NB: NOC-siden under kjoerer over http://. Hvis rotator.html serveres
+    // over https (f.eks. GitHub Pages) blokkerer nettleseren iframen som
+    // "mixed content". Rotatoren maa derfor kjoeres lokalt (file:// eller
+    // lokal preview-server) for at NOC-visningen skal fungere.
     const PAGES = [
       {
         title: "JPC infoskjerm",

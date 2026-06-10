@@ -384,8 +384,6 @@ html, body {
 
 .countdown { background: var(--bar-bg); color: var(--bar-fg); padding: 16px 24px 18px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; border-top: 1px solid var(--rule); }
 .countdown .title { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--bar-fg-soft); margin-bottom: 4px; }
-.countdown .event { font-family: var(--serif); font-weight: 700; font-size: 20px; line-height: 1.05; letter-spacing: -.01em; }
-.countdown .event em { font-style: italic; color: var(--bar-fg-soft); font-weight: 400; }
 .countdown .digits { display: flex; gap: 10px; }
 .countdown .unit { text-align: center; min-width: 58px; }
 .countdown .unit .num { font-family: var(--mono); font-weight: 500; font-size: 34px; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--bar-accent); }
@@ -404,4 +402,12 @@ body.kiosk .mode-toggle { display: none; }
   font-family: var(--mono);
   padding-top: 8px;
   line-height: 1.35;
+}
+
+/* Kiosk: full-bleed uten preview-ramme */
+body.kiosk .shell { padding: 0; background: var(--paper); }
+body.kiosk .screen {
+  width: min(100vw, calc(100vh * 9 / 16));
+  border: 0;
+  box-shadow: none;
 }

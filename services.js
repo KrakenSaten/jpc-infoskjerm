@@ -167,7 +167,6 @@
       const hourlyAll = (hourly?.time || []).map((time, index) => ({
         time,
         timeMs: new Date(time).getTime(),
-        label: new Date(time).toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" }).slice(0, 5),
         temperature: hourly.temperature_2m[index],
         precipitation: hourly.precipitation[index],
         weatherCode: hourly.weather_code[index],
