@@ -62,7 +62,10 @@
 
   /* ---------- COUNTDOWN ---------- */
 
-  function renderCountdown(elements, targetDate) {
+  function renderCountdown(elements, targetDate, label) {
+    if (elements.cdTitle && label) {
+      elements.cdTitle.textContent = label;
+    }
     let diff = Math.max(0, targetDate.getTime() - Date.now());
     const d = Math.floor(diff / 86400000); diff -= d * 86400000;
     const h = Math.floor(diff / 3600000);  diff -= h * 3600000;
@@ -86,26 +89,72 @@
     return getMenuForDay(menu, jsDay);
   }
 
+  /* ---------- Norske helligdager ---------- */
+
+  function getEasterSunday(year) {
+    // Anonym gregoriansk algoritme
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31); // 3=mars, 4=april
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function isPublicHoliday(date) {
+    const y = date.getFullYear();
+    const sameDay = (a, b) =>
+      a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const addDays = (base, days) => {
+      const d = new Date(base);
+      d.setDate(d.getDate() + days);
+      return d;
+    };
+
+    const fixed = [[0, 1], [4, 1], [4, 17], [11, 25], [11, 26]]; // 1.1, 1.5, 17.5, 25.12, 26.12
+    if (fixed.some(([m, d]) => date.getMonth() === m && date.getDate() === d)) return true;
+
+    const easter = getEasterSunday(y);
+    const movable = [-3, -2, 0, 1, 39, 49, 50]; // skjaertorsdag, langfredag, paaskedagene, himmelfart, pinse
+    return movable.some(offset => sameDay(date, addDays(easter, offset)));
+  }
+
   function getLunchStatus(now) {
     const h = now.getHours();
-    const m = now.getMinutes();
     const dow = now.getDay();
     if (dow === 0 || dow === 6) return "Stengt i helg";
-    if (h < 10 || (h === 10 && m < 30)) return "Servering 11:30";
-    if ((h === 10 && m >= 30) || h === 11 || h === 12) return "Servering n\u00e5";
-    if (h === 13) return "Servering ferdig";
-    if (h >= 14 && h < 17) return "Ferdig for i dag";
+    if (isPublicHoliday(now)) return "Stengt \u00b7 helligdag";
+    if (h < 11) return "Servering 11:00";
+    if (h < 13) return "Servering n\u00e5";
+    if (h < 14) return "Servering ferdig";
+    if (h < 17) return "Ferdig for i dag";
     return "";
   }
 
   function splitDish(title) {
-    // Prototype viser dish som hovedtittel + beskrivelse i italic.
-    // Hvis tittel inneholder "med" eller "m/", del der.
+    // Menyformatet er "Rett – beskrivelse". Del primaert paa tankestrek/bindestrek
+    // med mellomrom rundt, og fall tilbake paa " med " / " m/ " for eldre format.
     const str = String(title || "").trim();
     if (!str) return { main: "", sub: "" };
 
-    // Se etter " med " eller " m/ "
-    const matchers = [" med ", " m/ ", " m\u00b2 "];
+    const dashMatch = str.match(/\s[\u2013\u2014-]\s/);
+    if (dashMatch && dashMatch.index > 0) {
+      return {
+        main: str.substring(0, dashMatch.index).trim(),
+        sub: str.substring(dashMatch.index + dashMatch[0].length).trim(),
+      };
+    }
+
+    const matchers = [" med ", " m/ "];
     for (const sep of matchers) {
       const idx = str.toLowerCase().indexOf(sep);
       if (idx > 0 && idx < str.length - 4) {
@@ -127,12 +176,15 @@
     }
 
     const today = new Date();
-    const todayEntry = getLunchForDate(menu, today);
+    const isHolidayToday = isPublicHoliday(today);
+    const todayEntry = isHolidayToday ? null : getLunchForDate(menu, today);
     elements.lunsjStatus.textContent = getLunchStatus(today);
 
     if (!todayEntry) {
       elements.lunsjHeading.textContent = "Lunsj";
-      elements.lunsjDish.textContent = "Ingen servering i dag";
+      elements.lunsjDish.textContent = isHolidayToday
+        ? "Stengt \u2013 helligdag"
+        : "Ingen servering i dag";
       elements.lunsjSub.textContent = "";
       elements.lunsjAller.textContent = "";
     } else {
@@ -160,7 +212,14 @@
     const tomorrowDayIdx = (tomorrow.getDay() + 6) % 7;
     const lblText = (dow >= 1 && dow <= 4) ? "I morgen" : "Neste arbeidsdag";
     elements.nextdayLbl.textContent = `${lblText} \u00b7 ${WEEKDAYS_LONG[tomorrowDayIdx].toLowerCase()}`;
-    elements.nextdayDish.textContent = nextEntry ? nextEntry.title : "Ikke satt";
+
+    // Menyen gjelder kun en uke av gangen: hvis neste arbeidsdag faller i en
+    // annen ISO-uke, har vi ikke data for den enda.
+    if (getIsoWeek(tomorrow) !== menu.weekNumber) {
+      elements.nextdayDish.textContent = "Ny meny kommer";
+    } else {
+      elements.nextdayDish.textContent = nextEntry ? nextEntry.title : "Ikke satt";
+    }
   }
 
   function renderLunchError(elements) {
@@ -224,9 +283,23 @@
       tr.appendChild(tdMin);
       elements.tbaneBody.appendChild(tr);
     });
+
+    // Avviksmelding fra Entur (vis foerste unike)
+    const situations = [...new Set(
+      departures.slice(0, 5).map(dep => dep.situation).filter(Boolean)
+    )];
+    if (situations.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.className = "tbane-situation";
+      td.textContent = "\u26a0 " + situations[0];
+      tr.appendChild(td);
+      elements.tbaneBody.appendChild(tr);
+    }
   }
 
-  /* ---------- VÃR (siden + graf) ---------- */
+  /* ---------- VAER (siden + graf) ---------- */
 
   function weatherCodeText(code) {
     const s = {
@@ -259,22 +332,22 @@
     elements.weatherDesc.firstChild && (elements.weatherDesc.firstChild.textContent = weatherDescription(today));
     elements.weatherMeta.textContent = `Vind ${Math.round(today.wind)} m/s \u00b7 ${today.precipitation.toFixed(1)} mm nedb\u00f8r`;
 
+    const nowIcon = document.getElementById("now-icon");
+    if (nowIcon) {
+      const cond = weatherCodeToCondition(today.weatherCode);
+      const hour = new Date().getHours();
+      nowIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(cond, hour) + '</svg>';
+    }
+
     if (days[1]) {
       const tomorrow = days[1];
       elements.weatherTomorrow.textContent = `${Math.round(tomorrow.maxTemp)}\u00b0 \u00b7 ${weatherCodeText(tomorrow.weatherCode ?? 3).toLowerCase()}`;
 
-    // Render weather icons
-    var nowIcon = document.getElementById("now-icon");
-    if (nowIcon) {
-      var cond = weatherCodeToCondition(today.weatherCode);
-      var hour = new Date().getHours();
-      nowIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(cond, hour) + '</svg>';
-    }
-    var tmrwIcon = document.getElementById("tmrw-icon");
-    if (tmrwIcon && days[1]) {
-      var tmrwCond = weatherCodeToCondition(days[1].weatherCode);
-      tmrwIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(tmrwCond, 12) + '</svg>';
-    }
+      const tmrwIcon = document.getElementById("tmrw-icon");
+      if (tmrwIcon) {
+        const tmrwCond = weatherCodeToCondition(tomorrow.weatherCode);
+        tmrwIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(tmrwCond, 12) + '</svg>';
+      }
     }
   }
 
@@ -332,7 +405,7 @@
       return n;
     };
 
-    // Natt-bÃ¥nd (20:00â06:00)
+    // Natt-baand (20:00-06:00)
     const nightNodes = [];
     let start = null;
     for (let i = 0; i < points.length; i++) {
@@ -388,7 +461,7 @@
     setChildren("wx-daysep", dayNodes);
     setChildren("wx-days", dayLabelNodes);
 
-    // Horisontalt rutenett for temp (hver 3Â°)
+    // Horisontalt rutenett for temp (hver 3 grader)
     const gridNodes = [];
     const yLeftNodes = [];
     for (let t = tmin; t <= tmax; t += 3) {
@@ -420,7 +493,7 @@
       }
     }
 
-    // Y-akse hÃ¸yre (nedbÃ¸r)
+    // Y-akse hoeyre (nedboer)
     const yRightNodes = [];
     const rStep = Math.max(1, Math.round(rmax / 2));
     for (let r = 0; r <= rmax; r += rStep) {
@@ -436,7 +509,7 @@
     }, "mm"));
     setChildren("wx-yright", yRightNodes);
 
-    // Jevn temperaturkurve (catmull-rom â kubisk bezier)
+    // Jevn temperaturkurve (catmull-rom -> kubisk bezier)
     const pts = xs.map((x, i) => [x, tY(points[i].t)]);
     let tpath = `M ${pts[0][0]} ${pts[0][1]}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -465,7 +538,7 @@
     const rainEl = document.getElementById("wx-rain");
     if (rainEl) rainEl.setAttribute("d", rpath);
 
-    // Min/max-etiketter + "NÃ¥"-markÃ¸r
+    // Min/max-etiketter + "Naa"-markoer
     const labelNodes = [];
     const maxIdx = tvals.indexOf(rawMax);
     const minIdx = tvals.indexOf(rawMin);
@@ -652,11 +725,11 @@
     if (!elements.weatherStatusText) return;
     const prefix = stale ? "lagret" : "oppd.";
     if (!date) {
-      elements.weatherStatusText.textContent = "yr.no";
+      elements.weatherStatusText.textContent = "Open-Meteo";
       return;
     }
     elements.weatherStatusText.textContent =
-      "yr.no \u00b7 " + prefix + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes());
+      "Open-Meteo \u00b7 " + prefix + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes());
   }
 
   /* ---------- THEME ---------- */
@@ -671,7 +744,7 @@
 
   function autoTheme() {
     const hour = new Date().getHours();
-    // Dag 07:00-17:00, natt ellers. Enkel tilnÃ¦rming.
+    // Dag 07:00-17:00, natt ellers. Enkel tilnaerming.
     const theme = (hour >= 7 && hour < 17) ? "light" : "dark";
     applyTheme(theme);
     return theme;

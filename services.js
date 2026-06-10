@@ -35,6 +35,17 @@
     return "Andre avganger";
   }
 
+  function getSituationText(call) {
+    const situations = call.situations || [];
+    for (const situation of situations) {
+      const summaries = situation.summary || [];
+      const preferred = summaries.find(s => String(s.language || "").startsWith("no")) || summaries[0];
+      const value = preferred?.value?.trim();
+      if (value) return value;
+    }
+    return "";
+  }
+
   function normalizeDeparture(call) {
     const line = call.serviceJourney?.journeyPattern?.line;
     const transportMode = line?.transportMode?.toLowerCase?.();
@@ -59,6 +70,7 @@
       countdownLabel: getCountdownLabel(expectedTime),
       statusLabel: status.label,
       isDelayed: status.delayed,
+      situation: getSituationText(call),
       timestamp: expectedTime.getTime(),
     };
   }
@@ -96,6 +108,7 @@
                   expectedDepartureTime
                   destinationDisplay { frontText }
                   quay { publicCode description }
+                  situations { summary { value language } }
                   serviceJourney {
                     journeyPattern {
                       line { publicCode name transportMode }
@@ -140,6 +153,7 @@
 
       const days = daily.time.slice(0, 2).map((dateText, index) => ({
         label: index === 0 ? "I dag" : "I morgen",
+        weatherCode: daily.weather_code[index],
         summary: getWeatherSummary(daily.weather_code[index]),
         maxTemp: daily.temperature_2m_max[index],
         minTemp: daily.temperature_2m_min[index],
@@ -182,7 +196,7 @@
           publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
         }))
         .sort((a, b) => (new Date(b.publishedAt).getTime() || 0) - (new Date(a.publishedAt).getTime() || 0))
-        .slice(0, 6)
+        .slice(0, 10)
         .map(item => ({
           title: item.title,
           link: item.link,

@@ -396,3 +396,12 @@ html, body {
 .mode-toggle { position: fixed; top: 16px; right: 16px; background: var(--surface); border: 1px solid var(--rule); color: var(--ink); font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; padding: 8px 12px; cursor: pointer; z-index: 20; }
 .mode-toggle:hover { background: var(--band); }
 body.kiosk .mode-toggle { display: none; }
+
+/* Avviksmelding i T-banetabellen */
+.tbane-situation {
+  color: var(--warn);
+  font-size: 12px;
+  font-family: var(--mono);
+  padding-top: 8px;
+  line-height: 1.35;
+}

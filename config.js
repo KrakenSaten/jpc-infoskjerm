@@ -29,8 +29,8 @@ nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
 menuGithubUrl: MENU_GITHUB_URL,
 cacheKeys: Object.freeze({
 menu: "jpc-menu-cache-v3",
-departures: "jpc-departures-cache-v3",
-weather: "jpc-weather-cache-v3",
+departures: "jpc-departures-cache-v4",
+weather: "jpc-weather-cache-v4",
 news: "jpc-news-cache-v3",
 }),
 });

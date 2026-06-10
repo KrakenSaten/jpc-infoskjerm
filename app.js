@@ -3,6 +3,7 @@ const {
   coords: SKULLERUD_COORDS,
   refreshMs: REFRESH_MS,
   jubileeDepartureDate: JUBILEE_DEPARTURE_DATE,
+  jubileeLabel: JUBILEE_LABEL,
   nrkNewsFeedUrl: NRK_NEWS_FEED_URL,
   cacheKeys: CACHE_KEYS,
 } = window.JPC_CONFIG;
@@ -76,6 +77,7 @@ const elements = {
   newsUpdated: document.getElementById("news-updated"),
   newsDots: document.getElementById("news-dots"),
 
+  cdTitle: document.getElementById("cd-title"),
   cdDays: document.getElementById("cd-d"),
   cdHours: document.getElementById("cd-h"),
   cdMins: document.getElementById("cd-m"),
@@ -233,7 +235,7 @@ function refreshAll() {
   loadMenu();
 }
 
-/* ---------- Tema-hÃ¥ndtering ---------- */
+/* ---------- Tema-haandtering ---------- */
 
 function setupThemeHandling() {
   // Les lagret preferanse eller auto-velg
@@ -320,6 +322,29 @@ function scheduleNightlyReload() {
   }, msUntil);
 }
 
+/* ---------- Watchdog: reload ved ny commit ---------- */
+
+const COMMIT_CHECK_MS = 60 * 60 * 1000;
+let knownCommitSha = null;
+
+async function checkForNewVersion() {
+  try {
+    const response = await fetch(
+      "https://api.github.com/repos/KrakenSaten/jpc-infoskjerm/commits/main",
+      { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" }
+    );
+    if (!response.ok) return;
+    const data = await response.json();
+    const sha = data?.sha;
+    if (!sha) return;
+    if (knownCommitSha && sha !== knownCommitSha) {
+      window.location.reload();
+      return;
+    }
+    knownCommitSha = sha;
+  } catch {}
+}
+
 /* ---------- Oppstart ---------- */
 
 async function init() {
@@ -329,7 +354,7 @@ async function init() {
   scheduleNightlyReload();
 
   formatClock(elements);
-  renderCountdown(elements, JUBILEE_DEPARTURE_DATE);
+  renderCountdown(elements, JUBILEE_DEPARTURE_DATE, JUBILEE_LABEL);
 
   // Initiell data-henting
   await loadMenu();
@@ -338,13 +363,18 @@ async function init() {
   fetchNews();
 
   // Intervaller
-  window.setInterval(() => formatClock(elements), REFRESH_MS.clock);
-  window.setInterval(() => renderCountdown(elements, JUBILEE_DEPARTURE_DATE), REFRESH_MS.clock);
+  window.setInterval(() => {
+    formatClock(elements);
+    renderCountdown(elements, JUBILEE_DEPARTURE_DATE, JUBILEE_LABEL);
+  }, REFRESH_MS.clock);
   window.setInterval(fetchDepartures, REFRESH_MS.departures);
   window.setInterval(fetchWeather, REFRESH_MS.weather);
   window.setInterval(fetchNews, REFRESH_MS.news);
   window.setInterval(loadMenu, REFRESH_MS.menu);
   window.setInterval(() => rotateNewsPage(elements), NEWS_ROTATION_MS);
+
+  checkForNewVersion();
+  window.setInterval(checkForNewVersion, COMMIT_CHECK_MS);
 }
 
 init();

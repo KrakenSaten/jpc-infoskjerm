@@ -35,11 +35,12 @@ Vanilla JS, ingen build-steg, ingen npm. Alt deployes direkte via GitHub Pages.
 
 ### Datakilder
 
-- T-bane: Entur GraphQL, NSR:StopPlace:58227, 30 sek
-- Vaer: Open-Meteo, 59.866685/10.840032, 10 min
-- Nyheter: NRK RSS via rss2json, 5 min
+- T-bane: Entur GraphQL (inkl. avviksmeldinger/situations), NSR:StopPlace:58227, 30 sek
+- Vaer: Open-Meteo, 59.866685/10.840032, 30 min
+- Nyheter: NRK RSS (direkte fetch), 10 min
 - Lunsj: menu.csv pa GitHub, 60 min
-- Nedtelling: config.js, 30. april 2026 kl 15:00
+- Nedtelling: config.js (jubileeDepartureDate + jubileeLabel), 1 sek
+- Watchdog: GitHub API, siste commit-sha pa main, 60 min -> auto-reload ved ny commit
 
 ### Design tokens
 
@@ -56,7 +57,13 @@ Rediger menu.csv. Format: week;day;title;allergens (semikolon-separert!)
 I index.html, finn id="notice-msg" og endre teksten. hidden-attributt skjuler.
 
 ### Endre nedtellingsdato
-I config.js, endre jubileeDepartureDate.
+I config.js, endre jubileeDepartureDate og jubileeLabel (label vises som tittel pa nedtellingen).
+
+### Lunsjlogikk
+- Servering 11:00-13:00 (status i lunsjkortet folger dette)
+- Menyen gjelder en uke av gangen. Pa fredag/helg viser "Neste arbeidsdag" teksten "Ny meny kommer"
+- Norske helligdager beregnes i renderers.js (isPublicHoliday) -> "Stengt - helligdag"
+- splitDish deler tittel pa " - " (tankestrek) forst, deretter " med "/" m/ ". Hold formatet "Rett - beskrivelse"
 
 ## Viktige gotchas
 
@@ -66,6 +73,7 @@ I config.js, endre jubileeDepartureDate.
 4. Base64-overforing: del i 2 chunks a 14500 tegn
 5. Encoding: UTF-8 tegn kan dobbelt-kodes ved base64. Fiks med .replace()
 6. Rate-limits pa Chrome-tools: 5-timers vindu
+7. Watchdog reloader skjermen automatisk innen en time etter ny commit pa main
 
 ## Kiosk-modus
 
