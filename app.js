@@ -183,12 +183,13 @@ async function fetchWeather() {
   try {
     const weather = await fetchWeatherData(SKULLERUD_COORDS, getWeatherSummary);
     const updatedAt = new Date();
-    renderWeather(elements, weather.days);
+    renderWeather(elements, weather.days, weather.current);
     renderWeatherGraph(elements, weather.hourlyForecast);
     updateWeatherStatus(elements, updatedAt, false);
     writeCache(CACHE_KEYS.weather, {
       days: weather.days,
       hourlyForecast: weather.hourlyForecast,
+      current: weather.current,
       fetchedAt: updatedAt.toISOString(),
     });
     setSourceUpdate("weather", updatedAt, false);
@@ -197,7 +198,7 @@ async function fetchWeather() {
     const cached = readCache(CACHE_KEYS.weather);
     const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
     if (cached) {
-      renderWeather(elements, cached.days || []);
+      renderWeather(elements, cached.days || [], cached.current);
       renderWeatherGraph(elements, cached.hourlyForecast || []);
       updateWeatherStatus(elements, cachedDate, true);
       setSourceUpdate("weather", cachedDate, true);
