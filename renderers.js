@@ -320,16 +320,21 @@
     return base + ", kraftig vind.";
   }
 
-  function renderWeather(elements, days) {
+  function renderWeather(elements, days, current) {
     if (!days || !days.length) return;
     const today = days[0];
+    // Naa-koden (fra current) gir riktig bilde av vaeret akkurat naa;
+    // dagskoden brukes som fallback.
+    const nowCode = current?.weatherCode ?? today.weatherCode;
+    const nowWind = current?.wind ?? today.wind;
     elements.weatherTemp.textContent = Math.round(today.maxTemp) + "\u00b0";
-    elements.weatherDesc.firstChild && (elements.weatherDesc.firstChild.textContent = weatherDescription(today));
-    elements.weatherMeta.textContent = `Vind ${Math.round(today.wind)} m/s \u00b7 ${today.precipitation.toFixed(1)} mm nedb\u00f8r`;
+    elements.weatherDesc.firstChild && (elements.weatherDesc.firstChild.textContent =
+      weatherDescription({ weatherCode: nowCode, wind: nowWind }));
+    elements.weatherMeta.textContent = `Vind ${Math.round(nowWind)} m/s \u00b7 ${today.precipitation.toFixed(1)} mm nedb\u00f8r`;
 
     const nowIcon = document.getElementById("now-icon");
     if (nowIcon) {
-      const cond = weatherCodeToCondition(today.weatherCode);
+      const cond = weatherCodeToCondition(nowCode);
       const hour = new Date().getHours();
       nowIcon.innerHTML = '<svg viewBox="0 0 18 18">' + wxIconSvg(cond, hour) + '</svg>';
     }
