@@ -139,6 +139,7 @@
         longitude: String(coords.longitude),
         daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
         hourly: "temperature_2m,precipitation,weather_code",
+        current: "temperature_2m,weather_code,wind_speed_10m,precipitation",
         timezone: "Europe/Oslo",
         forecast_days: "3",
         wind_speed_unit: "ms",
@@ -151,16 +152,42 @@
       const hourly = payload?.hourly;
       if (!daily?.time?.length) throw new Error("Mangler daglig prognose");
 
+      // Open-Meteos daily.weather_code er dagens MEST ALVORLIGE kode.
+      // En eneste time med yr gjoer at hele dagen vises som regn.
+      // Bruk derfor den vanligste koden paa dagtid (08-18) i stedet.
+      const dominantDaytimeCode = (dateText) => {
+        const counts = {};
+        (hourly?.time || []).forEach((time, i) => {
+          if (!time.startsWith(dateText)) return;
+          const hr = parseInt(time.slice(11, 13), 10);
+          if (hr < 8 || hr > 18) return;
+          const code = hourly.weather_code[i];
+          counts[code] = (counts[code] || 0) + 1;
+        });
+        let best = null, bestCount = 0;
+        for (const code in counts) {
+          if (counts[code] > bestCount) { best = Number(code); bestCount = counts[code]; }
+        }
+        return best;
+      };
+
       const days = daily.time.slice(0, 2).map((dateText, index) => ({
         label: index === 0 ? "I dag" : "I morgen",
-        weatherCode: daily.weather_code[index],
-        summary: getWeatherSummary(daily.weather_code[index]),
+        weatherCode: dominantDaytimeCode(dateText) ?? daily.weather_code[index],
+        summary: getWeatherSummary(dominantDaytimeCode(dateText) ?? daily.weather_code[index]),
         maxTemp: daily.temperature_2m_max[index],
         minTemp: daily.temperature_2m_min[index],
         precipitation: daily.precipitation_sum[index],
         wind: daily.wind_speed_10m_max[index],
         dateText,
       }));
+
+      const current = payload?.current ? {
+        temperature: payload.current.temperature_2m,
+        weatherCode: payload.current.weather_code,
+        wind: payload.current.wind_speed_10m,
+        precipitation: payload.current.precipitation,
+      } : null;
 
       // FIKS: velg 24 timer FRA NAA, ikke fra midnatt
       const nowMs = Date.now();
@@ -177,7 +204,7 @@
       if (startIdx < 0) startIdx = 0;
       const hourlyForecast = hourlyAll.slice(startIdx, startIdx + 24);
 
-      return { days, hourlyForecast };
+      return { days, hourlyForecast, current };
     });
   }
 
