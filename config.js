@@ -22,8 +22,8 @@ weather: 30 * 60 * 1_000,
 news: 10 * 60 * 1_000,
 menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
 }),
-jubileeDepartureDate: new Date("2026-06-12T16:00:00+02:00"),
-jubileeLabel: "André har ferie! 🌴",
+jubileeDepartureDate: new Date("2026-07-03T16:00:00+02:00"),
+jubileeLabel: "Steinar har ferie! 🌴",
 nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
 menuGithubUrl: MENU_GITHUB_URL,
 cacheKeys: Object.freeze({
