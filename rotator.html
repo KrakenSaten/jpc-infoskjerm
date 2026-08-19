@@ -134,8 +134,7 @@
     <div class="fallback-card">
       <h1>Kunne ikke laste siden i ramme</h1>
       <p>Noen nettsider blokkerer visning i iframe. Hvis det skjer, åpne sidene direkte:</p>
-      <p><a id="fallback-link-1" href="#" target="_blank" rel="noreferrer noopener"></a></p>
-      <p><a id="fallback-link-2" href="#" target="_blank" rel="noreferrer noopener"></a></p>
+      <div id="fallback-links"></div>
     </div>
   </div>
 
@@ -156,6 +155,11 @@
         url: "http://inm.jpc.no:8080/noc.view.xsi?index=2",
         external: true,
       },
+      {
+        title: "VG",
+        url: "https://www.vg.no/",
+        external: true,
+      },
     ];
 
     const elements = {
@@ -163,8 +167,7 @@
       pageTitle: document.querySelector("#page-title"),
       rotationStatus: document.querySelector("#rotation-status"),
       fallback: document.querySelector("#fallback"),
-      fallbackLink1: document.querySelector("#fallback-link-1"),
-      fallbackLink2: document.querySelector("#fallback-link-2"),
+      fallbackLinks: document.querySelector("#fallback-links"),
     };
 
     let activeIndex = 0;
@@ -172,10 +175,18 @@
     let externalPageTimeout = null;
 
     function updateFallbackLinks() {
-      elements.fallbackLink1.href = PAGES[0].url;
-      elements.fallbackLink1.textContent = PAGES[0].url;
-      elements.fallbackLink2.href = PAGES[1].url;
-      elements.fallbackLink2.textContent = PAGES[1].url;
+      elements.fallbackLinks.replaceChildren(
+        ...PAGES.map((page) => {
+          const p = document.createElement("p");
+          const a = document.createElement("a");
+          a.href = page.url;
+          a.target = "_blank";
+          a.rel = "noreferrer noopener";
+          a.textContent = `${page.title} - ${page.url}`;
+          p.append(a);
+          return p;
+        })
+      );
     }
 
     function clearExternalPageTimeout() {
