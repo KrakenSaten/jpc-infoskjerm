@@ -132,7 +132,7 @@
 
   <div id="fallback" class="fallback">
     <div class="fallback-card">
-      <h1>Kunne ikke laste siden i ramme</h1>
+      <h1 id="fallback-title">Kunne ikke laste siden i ramme</h1>
       <p>Noen nettsider blokkerer visning i iframe. Hvis det skjer, åpne sidene direkte:</p>
       <div id="fallback-links"></div>
     </div>
@@ -155,11 +155,6 @@
         url: "http://inm.jpc.no:8080/noc.view.xsi?index=2",
         external: true,
       },
-      {
-        title: "BitTitan",
-        url: "https://www.bittitan.com/account/login",
-        external: true,
-      },
     ];
 
     const elements = {
@@ -167,6 +162,7 @@
       pageTitle: document.querySelector("#page-title"),
       rotationStatus: document.querySelector("#rotation-status"),
       fallback: document.querySelector("#fallback"),
+      fallbackTitle: document.querySelector("#fallback-title"),
       fallbackLinks: document.querySelector("#fallback-links"),
     };
 
@@ -174,19 +170,18 @@
     let nextSwapAt = Date.now() + ROTATION_MS;
     let externalPageTimeout = null;
 
-    function updateFallbackLinks() {
-      elements.fallbackLinks.replaceChildren(
-        ...PAGES.map((page) => {
-          const p = document.createElement("p");
-          const a = document.createElement("a");
-          a.href = page.url;
-          a.target = "_blank";
-          a.rel = "noreferrer noopener";
-          a.textContent = `${page.title} - ${page.url}`;
-          p.append(a);
-          return p;
-        })
-      );
+    function showFallbackFor(index) {
+      const page = PAGES[index];
+      const p = document.createElement("p");
+      const a = document.createElement("a");
+      a.href = page.url;
+      a.target = "_blank";
+      a.rel = "noreferrer noopener";
+      a.textContent = page.url;
+      p.append(a);
+      elements.fallbackTitle.textContent = `Kunne ikke vise "${page.title}"`;
+      elements.fallbackLinks.replaceChildren(p);
+      elements.fallback.style.display = "grid";
     }
 
     function clearExternalPageTimeout() {
@@ -211,7 +206,7 @@
 
       if (page.external) {
         externalPageTimeout = window.setTimeout(() => {
-          elements.fallback.style.display = "grid";
+          if (activeIndex === index) showFallbackFor(index);
         }, EXTERNAL_PAGE_TIMEOUT_MS);
       }
     }
@@ -227,7 +222,7 @@
     }
 
     function handleFrameError() {
-      elements.fallback.style.display = "grid";
+      if (PAGES[activeIndex].external) showFallbackFor(activeIndex);
     }
 
     function handleFrameLoad() {
@@ -235,7 +230,6 @@
       clearExternalPageTimeout();
     }
 
-    updateFallbackLinks();
     showPage(0);
     updateCountdown();
 
