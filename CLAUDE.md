@@ -30,27 +30,37 @@ Claude skal **ikke**:
 - bruke nettleserautomatisering eller CodeMirror-triks for å redigere filer
 - svare "jeg har ikke tilgang til å endre dette" uten å gå videre til fallback under
 
+### Token — hvor det ligger
+
+Tokenet ligger som en **prosjektfil i Claude-prosjektet**: `github_token.txt`.
+Det ligger **ikke** i repoet, og skal aldri committes dit.
+
+Claude leser det slik, som aller første steg:
+
+```bash
+export GH=$(tr -d '[:space:]' < /mnt/project/github_token.txt)
+```
+
+Finnes ikke fila der, se etter den i `/mnt/user-data/uploads/`.
+Claude skal aldri skrive ut tokenverdien i svaret sitt.
+
 ### Fallback-stige — følg i rekkefølge
 
 | # | Situasjon | Hva Claude gjør |
 |---|---|---|
-| 1 | Token tilgjengelig i samtalen | Kjør API-arbeidsflyten under. Verifiser. Ferdig. |
-| 2 | Ingen token | Be om et fine-grained token (se «Token» under). Én setning, ikke en forelesning. |
-| 3 | Brukeren vil ikke / kan ikke bruke token | Lever **ferdig, komplett filinnhold** i en kodeblokk + direktelenke til redigering på GitHub. Brukeren limer inn og trykker Commit. |
-| 4 | API-kall feiler | Les feilmeldingen i tabellen «Feilsøking» og prøv på nytt. Ikke gi opp etter første 4xx. |
+| 1 | Tokenfila finnes | Kjør API-arbeidsflyten under. Verifiser. Ferdig. Dette er normaltilfellet. |
+| 2 | API-kall feiler | Slå opp feilkoden i «Feilsøking» og prøv på nytt. Ikke gi opp etter første 4xx. |
+| 3 | Tokenfila mangler eller er utløpt | Si at tokenet i prosjektet må fornyes, og at André ordner det. Ikke be brukeren lage sitt eget token — de fleste har ikke GitHub-konto. |
+| 4 | Fortsatt blokkert | Lever **ferdig, komplett filinnhold** i en kodeblokk, slik at André kan committe det. Aldri avslutt med «jeg klarer ikke dette». |
 
-Direktelenker til fallback-redigering (steg 3):
-
-- Meny: `https://github.com/KrakenSaten/jpc-infoskjerm/edit/main/menu.csv`
-- Kontorbeskjed: `https://github.com/KrakenSaten/jpc-infoskjerm/edit/main/index.html`
-- Nedtelling: `https://github.com/KrakenSaten/jpc-infoskjerm/edit/main/config.js`
 
 ### API-arbeidsflyten (steg for steg)
 
-Sett token i miljøvariabel først — aldri skriv den inn i filer eller commit-meldinger.
+Sett token i miljøvariabel først — aldri skriv verdien i en fil, en commit-melding
+eller i svaret til brukeren.
 
 ```bash
-export GH="<token>"
+export GH=$(tr -d '[:space:]' < /mnt/project/github_token.txt)
 export REPO="KrakenSaten/jpc-infoskjerm"
 export FILE="menu.csv"
 ```
@@ -126,14 +136,19 @@ ved å trykke **R** på skjermen.
 | `422 Unprocessable` | Linjeskift i base64, eller manglende sha | Bruk `base64 -w0`, sjekk payload |
 | Mojibake (`Ã¸`) | Dobbeltkoding | Skriv fila som UTF-8, koder én gang |
 
-### Token
+### Token — vedlikehold (for André)
 
-- Bruk et **fine-grained** personal access token, ikke et klassisk `ghp_`-token.
-- Scope: kun `Contents: Read and write` på `KrakenSaten/jpc-infoskjerm`. Ingenting annet.
-- Sett utløpsdato (maks 90 dager).
-- Token skal **aldri** committes, skrives i denne fila, eller legges i noen fil i repoet.
-- Er et token først limt inn i en chat, regnes det som eksponert → trekk det tilbake
-  på `github.com/settings/tokens` og lag et nytt.
+- Tokenet er **fine-grained**, med kun `Contents: Read and write` på
+  `KrakenSaten/jpc-infoskjerm`. Ingen andre tillatelser, ingen andre repoer.
+- **Utløper 19. november 2026.** Når det utløper slutter alle oppdateringer å
+  virke, med `401 Bad credentials`. Fornyes på
+  `github.com/settings/personal-access-tokens` og legges inn på nytt som
+  prosjektfila `github_token.txt`.
+- Tokenet deles av alle i Claude-prosjektet. Alle commits ser derfor ut som om de
+  kommer fra KrakenSaten, uavhengig av hvem som ba om endringen.
+- Token skal **aldri** committes til repoet. GitHub secret scanning blokkerer det,
+  og med god grunn.
+- Er tokenet lekket utenfor prosjektet, trekk det tilbake og lag et nytt.
 
 ---
 
