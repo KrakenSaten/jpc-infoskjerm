@@ -9,6 +9,9 @@
 
 const MENU_GITHUB_URL = "https://raw.githubusercontent.com/KrakenSaten/jpc-infoskjerm/main/menu.csv";
 
+// Kontoravstemningen ligger i samme repo og hentes paa samme maate som menyen.
+const POLL_GITHUB_URL = "https://raw.githubusercontent.com/KrakenSaten/jpc-infoskjerm/main/poll.csv";
+
 window.JPC_CONFIG = Object.freeze({
 stopId: "NSR:StopPlace:58227",
 coords: Object.freeze({
@@ -21,16 +24,19 @@ clock: 1_000,
 weather: 30 * 60 * 1_000,
 news: 10 * 60 * 1_000,
 menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
+poll: 5 * 60 * 1_000, // Stemmer kommer som commits - sjekk hvert 5. min
 }),
 jubileeDepartureDate: new Date("2026-09-14T08:15:00+02:00"),
 jubileeLabel: "Morgenmøte mandag 14. september ☕",
 nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
 menuGithubUrl: MENU_GITHUB_URL,
+pollGithubUrl: POLL_GITHUB_URL,
 cacheKeys: Object.freeze({
 menu: "jpc-menu-cache-v3",
 departures: "jpc-departures-cache-v4",
 weather: "jpc-weather-cache-v4",
 news: "jpc-news-cache-v3",
+poll: "jpc-poll-cache-v1",
 }),
 });
 }());

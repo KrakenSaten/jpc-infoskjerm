@@ -108,6 +108,20 @@
           </div>
         </div>
 
+        <!-- Avstemning: skyves til bunnen av kolonnen via margin-top:auto -->
+        <div class="card poll" id="poll-card" hidden>
+          <h3>
+            <span>Kontoravstemning</span>
+            <span class="status" id="poll-status"></span>
+          </h3>
+          <div class="question" id="poll-question">Laster...</div>
+          <ul class="options" id="poll-options"></ul>
+          <div class="tally">
+            <span class="meter"><i id="poll-bar"></i></span>
+            <span class="count" id="poll-count">- av - har svart</span>
+          </div>
+        </div>
+
       </div>
 
       <div class="vr"></div>
@@ -175,6 +189,7 @@
 
 <script src="config.js"></script>
 <script src="menu-loader.js"></script>
+<script src="poll-loader.js"></script>
 <script src="renderers.js"></script>
 <script src="services.js"></script>
 <script src="app.js"></script>

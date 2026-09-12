@@ -183,9 +183,14 @@
     throw lastError || new Error("Ingen menykilde tilgjengelig");
   }
 
+  // splitCsvLine/stripBom/fetchWithTimeout deles med poll-loader.js, som
+  // leser samme semikolon-format fra samme kilde (GitHub raw + lokal fil).
   window.JPCMenuLoader = {
     loadMenuFromSources,
     normalizeMenuData,
     getIsoWeek,
+    splitCsvLine,
+    stripBom,
+    fetchWithTimeout,
   };
 }());

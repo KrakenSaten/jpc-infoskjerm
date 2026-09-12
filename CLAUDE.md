@@ -177,6 +177,8 @@ config.js         Innstillinger (API-endepunkter, koordinater, intervaller, nedt
 services.js       API-kall til Entur GraphQL, Open-Meteo, NRK RSS
 menu-loader.js    Laster og parser menu.csv
 menu.csv          Ukens meny (semikolon-separert, IKKE komma)
+poll-loader.js    Laster og parser poll.csv
+poll.csv          Kontoravstemning (semikolon-separert, type;key;value)
 rotator.html      Iframe-rotator for kiosk
 ```
 
@@ -188,6 +190,7 @@ rotator.html      Iframe-rotator for kiosk
 | Vær | Open-Meteo | 59.866685, 10.840032 | 10 min |
 | Nyheter | NRK RSS via rss2json | — | 5 min |
 | Lunsj | menu.csv på GitHub | — | 60 min |
+| Avstemning | poll.csv på GitHub | — | 5 min |
 | Nedtelling | config.js | `jubileeDepartureDate` | 1 sek |
 
 ### Design tokens
@@ -227,6 +230,44 @@ week;day;title;allergens
 - Rett opp åpenbare skrivefeil i rettnavn (f.eks. «Ratatoulie» → Ratatouille).
 - Kun én uke om gangen — ingen støtte for flere uker i fila.
 
+### Registrere en stemme i kontoravstemningen
+
+Den ansatte sier hvilket alternativ de velger, og Claude legger til én rad i
+`poll.csv`. Samme API-arbeidsflyt som for menyen, bare med `FILE="poll.csv"`.
+
+```
+vote;v3;b
+```
+
+- `v1`–`v7` er **anonyme plasser, ikke navn**. Hvem som har hvilken plass står i
+  prosjektfila `stemmeplasser.txt` i Claude-prosjektet — aldri i repoet. Repoet
+  er offentlig, og et navn ved siden av en stemme er en personopplysning.
+- Har personen stemt før, **endre den eksisterende raden** i stedet for å legge
+  til en ny. Parseren teller siste rad per plass, så resultatet blir riktig
+  uansett, men fila blir rotete.
+- Stemmer på alternativ-ID-er som ikke finnes telles ikke i det hele tatt.
+  Kontroller at bokstaven matcher en `option`-rad.
+
+### Starte en ny avstemning
+
+Bytt ut `question`- og `option`-radene, og **slett alle `vote`-rader**.
+
+| type | key | value |
+|---|---|---|
+| `question` | (tom) | Spørsmålet som vises på skjermen |
+| `option` | `a`, `b`, `c` … | Ett svaralternativ |
+| `voters` | (tom) | Antall ansatte som kan svare (nå `7`) |
+| `results` | (tom) | `done`, `always` eller `hidden` |
+| `vote` | `v1`–`v7` | Alternativ-ID-en personen valgte |
+
+- `results` styrer når stemmetallene vises: `done` = først når alle har svart
+  (standard), `always` = hele tiden, `hidden` = aldri. Antallet som har svart
+  vises uansett.
+- Minst to `option`-rader, ellers viser kortet en feilmelding.
+- Tom eller manglende `question`-rad skjuler hele kortet. Det er måten å avslutte
+  en avstemning på uten å slette fila.
+- Endres antall ansatte, oppdater `voters`.
+
 ### Endre kontorbeskjed
 
 I `index.html`: finn `id="notice-msg"` og endre teksten mellom `>` og `</div>`.
@@ -241,16 +282,18 @@ Etter utløp står nedtellingen på `00 00 00 00` til ny dato settes manuelt.
 
 ## Gotchas
 
-1. **menu.csv bruker semikolon** (`;`), ikke komma.
-2. **GitHub Pages cacher** — 2–10 min etter commit. Skjermen har en commit-watcher
+1. **menu.csv og poll.csv bruker semikolon** (`;`), ikke komma.
+2. **Aldri navn i poll.csv.** Stemmer registreres på anonyme plasser `v1`–`v7`.
+   Repoet er offentlig; koblingen navn → plass hører hjemme i Claude-prosjektet.
+3. **GitHub Pages cacher** — 2–10 min etter commit. Skjermen har en commit-watcher
    som reloader automatisk; **R** på tastaturet tvinger reload umiddelbart.
-3. **Mixed content**: Pages kjører HTTPS og blokkerer `http://`-iframes og
+4. **Mixed content**: Pages kjører HTTPS og blokkerer `http://`-iframes og
    `fetch`. Interne HTTP-ressurser (f.eks. `inm.jpc.no:8080`) krever intern
    hosting eller proxy.
-4. **iframe-blokkering**: Mange sider setter `X-Frame-Options` og kan ikke
+5. **iframe-blokkering**: Mange sider setter `X-Frame-Options` og kan ikke
    embeddes i rotatoren. Verifiser før du legger til en URL.
-5. **UTF-8**: Verifiser alltid etter push at æ/ø/å er intakte.
-6. **Lokal preview**: Kjør `start-preview.bat` (localhost:8181). `file://` feiler
+6. **UTF-8**: Verifiser alltid etter push at æ/ø/å er intakte.
+7. **Lokal preview**: Kjør `start-preview.bat` (localhost:8181). `file://` feiler
    pga. CORS.
 
 ## Kiosk-modus
@@ -271,6 +314,7 @@ wx-svg (+ wx-night, wx-daysep, wx-tgrid, wx-zero, wx-rain, wx-temp-area,
         wx-temp-line, wx-icons, wx-labels, wx-yleft, wx-yright, wx-xlabels, wx-days)
 tbane-card, tbane-body
 notice, notice-tag, notice-msg
+poll-card, poll-status, poll-question, poll-options, poll-bar, poll-count
 news-card, news-list, news-page, news-updated, news-dots
 cd-d, cd-h, cd-m, cd-s
 mode-toggle

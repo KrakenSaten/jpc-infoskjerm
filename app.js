@@ -9,6 +9,7 @@ const {
 } = window.JPC_CONFIG;
 
 const { loadMenuFromSources, getIsoWeek } = window.JPCMenuLoader;
+const { loadPollFromSources } = window.JPCPollLoader;
 const {
   formatClock,
   formatNewsTimestamp,
@@ -21,6 +22,8 @@ const {
   renderNews,
   rotateNewsPage,
   renderNotice,
+  renderPoll,
+  renderPollError,
   setLiveStatus,
   setPanelStaleFlag,
   updateUpdatedLabel,
@@ -70,6 +73,13 @@ const elements = {
   notice: document.getElementById("notice"),
   noticeTag: document.getElementById("notice-tag"),
   noticeMsg: document.getElementById("notice-msg"),
+
+  pollCard: document.getElementById("poll-card"),
+  pollStatus: document.getElementById("poll-status"),
+  pollQuestion: document.getElementById("poll-question"),
+  pollOptions: document.getElementById("poll-options"),
+  pollBar: document.getElementById("poll-bar"),
+  pollCount: document.getElementById("poll-count"),
 
   newsCard: document.getElementById("news-card"),
   newsList: document.getElementById("news-list"),
@@ -162,6 +172,25 @@ async function loadMenu() {
   }
 }
 
+// Avstemningen holdes utenfor setSourceUpdate/live-statusen med vilje: den er
+// valgfritt kontorinnhold, ikke en sanntidskilde, og skal ikke kunne slaa den
+// globale helsesjekken over i gult naar det ikke finnes noen aktiv avstemning.
+async function loadPoll() {
+  try {
+    const { poll } = await loadPollFromSources();
+    renderPoll(elements, poll);
+    writeCache(CACHE_KEYS.poll, { poll, fetchedAt: new Date().toISOString() });
+  } catch (error) {
+    console.warn("Avstemning: henting feilet, bruker cache om mulig.", error);
+    const cached = readCache(CACHE_KEYS.poll);
+    if (cached && cached.poll !== undefined) {
+      renderPoll(elements, cached.poll);
+    } else {
+      renderPollError(elements);
+    }
+  }
+}
+
 async function fetchDepartures() {
   try {
     const departures = await fetchDeparturesData(SKULLERUD_STOP_ID);
@@ -238,6 +267,7 @@ function refreshAll() {
   fetchWeather();
   fetchNews();
   loadMenu();
+  loadPoll();
 }
 
 /* ---------- Tema-haandtering ---------- */
@@ -367,6 +397,7 @@ async function init() {
 
   // Initiell data-henting (parallelt)
   loadMenu();
+  loadPoll();
   fetchDepartures();
   fetchWeather();
   fetchNews();
@@ -380,6 +411,7 @@ async function init() {
   window.setInterval(fetchWeather, REFRESH_MS.weather);
   window.setInterval(fetchNews, REFRESH_MS.news);
   window.setInterval(loadMenu, REFRESH_MS.menu);
+  window.setInterval(loadPoll, REFRESH_MS.poll);
   window.setInterval(() => rotateNewsPage(elements), NEWS_ROTATION_MS);
 
   checkForNewVersion();

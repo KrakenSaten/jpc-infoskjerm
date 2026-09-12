@@ -689,6 +689,76 @@
     elements.noticeMsg.textContent = notice.msg;
   }
 
+  /* ---------- AVSTEMNING ---------- */
+
+  function renderPoll(elements, poll) {
+    if (!elements.pollCard) return;
+
+    // Ingen aktiv avstemning: skjul kortet helt, ikke vis et tomt kort.
+    if (!poll) {
+      elements.pollCard.hidden = true;
+      return;
+    }
+
+    elements.pollCard.hidden = false;
+    elements.pollCard.classList.remove("error");
+    elements.pollQuestion.textContent = poll.question;
+
+    const isComplete = poll.answered >= poll.voters;
+    const showResults = poll.resultMode === "always"
+      || (poll.resultMode === "done" && isComplete);
+    const mostVotes = Math.max(0, ...poll.options.map(option => option.votes));
+
+    const list = elements.pollOptions;
+    list.innerHTML = "";
+    poll.options.forEach(option => {
+      const li = document.createElement("li");
+
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = option.id.toUpperCase();
+
+      const text = document.createElement("span");
+      text.className = "txt";
+      text.textContent = option.text;
+
+      li.appendChild(tag);
+      li.appendChild(text);
+
+      if (showResults) {
+        if (mostVotes > 0 && option.votes === mostVotes) li.classList.add("lead");
+        const count = document.createElement("span");
+        count.className = "cnt";
+        count.textContent = String(option.votes);
+        li.appendChild(count);
+        // Stolpen er relativ til det ledende alternativet, ikke til antall
+        // ansatte - ellers blir alle stolpene knapt synlige ved faa stemmer.
+        const share = mostVotes > 0 ? (option.votes / mostVotes) * 100 : 0;
+        li.style.setProperty("--fill", share.toFixed(1) + "%");
+      }
+
+      list.appendChild(li);
+    });
+    list.classList.toggle("with-results", showResults);
+
+    // Maaleren klippes til 100 %, men tallet vises raatt: staar det "8 av 7"
+    // er poll.csv feilredigert, og det skal synes.
+    const answeredShare = poll.voters > 0 ? (poll.answered / poll.voters) * 100 : 0;
+    elements.pollBar.style.width = Math.min(100, answeredShare).toFixed(1) + "%";
+    elements.pollCount.textContent = `${poll.answered} av ${poll.voters} har svart`;
+    elements.pollStatus.textContent = isComplete ? "fullf\u00f8rt" : "\u00e5pen";
+  }
+
+  function renderPollError(elements) {
+    if (!elements.pollCard) return;
+    elements.pollCard.hidden = false;
+    elements.pollCard.classList.add("error");
+    elements.pollStatus.textContent = "";
+    elements.pollQuestion.textContent = "Avstemningen er utilgjengelig akkurat n\u00e5.";
+    elements.pollOptions.innerHTML = "";
+    elements.pollCount.textContent = "";
+  }
+
   /* ---------- LIVE-STATUS ---------- */
 
   function setLiveStatus(elements, level) {
@@ -764,6 +834,8 @@
     renderNews,
     rotateNewsPage,
     renderNotice,
+    renderPoll,
+    renderPollError,
     setLiveStatus,
     setPanelStaleFlag,
     updateUpdatedLabel,
