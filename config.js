@@ -22,8 +22,8 @@ weather: 30 * 60 * 1_000,
 news: 10 * 60 * 1_000,
 menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
 }),
-jubileeDepartureDate: new Date("2026-08-28T16:00:00+02:00"),
-jubileeLabel: "Helg 28. august 🍻",
+jubileeDepartureDate: new Date("2026-09-14T08:15:00+02:00"),
+jubileeLabel: "Morgenmøte mandag 14. september ☕",
 nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
 menuGithubUrl: MENU_GITHUB_URL,
 cacheKeys: Object.freeze({
