@@ -18,6 +18,10 @@ med Source Serif 4 + IBM Plex.
 > Ingen kundedata, personopplysninger eller interne systemdetaljer skal committes
 > eller vises. Kun aggregerte tall og generell kontorinfo.
 
+**Denne fila er også prosjektfila i Claude-prosjektet.** Den er eneste kilde til
+hvordan skjermen oppdateres, slik at instruksen ikke finnes i to versjoner som
+driver fra hverandre. Endrer du den her, last den opp i prosjektet på nytt.
+
 ---
 
 ## Arbeidsflyt for Claude — les denne før du gjør noe
@@ -232,8 +236,9 @@ week;day;title;allergens
 
 ### Registrere en stemme i kontoravstemningen
 
-Den ansatte sier hvilket alternativ de velger, og Claude legger til én rad i
-`poll.csv`. Samme API-arbeidsflyt som for menyen, bare med `FILE="poll.csv"`.
+Den ansatte sier hvilket alternativ de velger — «jeg stemmer på B» — og Claude
+legger til én rad i `poll.csv`. Samme API-arbeidsflyt som for menyen, bare med
+`FILE="poll.csv"`.
 
 ```
 vote;v3;b
@@ -247,6 +252,12 @@ vote;v3;b
   uansett, men fila blir rotete.
 - Stemmer på alternativ-ID-er som ikke finnes telles ikke i det hele tatt.
   Kontroller at bokstaven matcher en `option`-rad.
+- **Aldri commit-meldinger som røper hvem som stemte hva.** Commit-historikken
+  er offentlig og permanent. Bruk en nøytral melding, f.eks. «Registrer stemme
+  i kontoravstemningen».
+
+Bekreft til slutt at stemmen er registrert, og at skjermen viser den innen en
+time eller umiddelbart hvis noen trykker **R**.
 
 ### Starte en ny avstemning
 
