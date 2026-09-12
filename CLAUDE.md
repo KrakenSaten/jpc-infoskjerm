@@ -36,16 +36,28 @@ Claude skal **ikke**:
 
 ### Token — hvor det ligger
 
-Tokenet ligger som en **prosjektfil i Claude-prosjektet**: `github token.txt`.
+Tokenet ligger som en **prosjektfil i Claude-prosjektet**: `github_token.txt`.
 Det ligger **ikke** i repoet, og skal aldri committes dit.
+
+> Navnet skal skrives med understrek, ikke mellomrom. Et mellomrom bryter
+> `< /mnt/project/...` uten anførselstegn, og fila leses fra shell flere steder.
+> Heter fila fortsatt `github token.txt` i prosjektet, gi den nytt navn ved
+> neste tokenfornyelse.
 
 Claude leser det slik, som aller første steg:
 
 - **I Cowork / Claude Code (sky):** prosjektfiler ligger ikke på disk. Bruk
-  `Projects`-verktøyet: `project_read` med `path: "github token.txt"`, og sett
-  verdien i `$GH` i bash.
-- **Der prosjektfiler er montert:** `export GH=$(tr -d '[:space:]' < /mnt/project/github_token.txt)`,
-  eventuelt `/mnt/user-data/uploads/`.
+  `Projects`-verktøyet: `project_read` med `path: "github_token.txt"`, og sett
+  verdien i `$GH` i bash. Finnes ikke fila under det navnet, se etter den i
+  prosjektfillista — den kan ligge igjen med mellomrom i navnet.
+- **Der prosjektfiler er montert:** bruk globben under. Den finner fila enten
+  navnet har understrek eller mellomrom:
+
+  ```bash
+  export GH=$(tr -d '[:space:]' < "$(ls /mnt/project/*token*.txt | head -1)")
+  ```
+
+  Prosjektfilene kan også ligge under `/mnt/user-data/uploads/`.
 
 Claude skal aldri skrive ut tokenverdien i svaret sitt.
 
@@ -65,7 +77,7 @@ Sett token i miljøvariabel først — aldri skriv verdien i en fil, en commit-m
 eller i svaret til brukeren.
 
 ```bash
-export GH=$(tr -d '[:space:]' < /mnt/project/github_token.txt)
+export GH=$(tr -d '[:space:]' < "$(ls /mnt/project/*token*.txt | head -1)")
 export REPO="KrakenSaten/jpc-infoskjerm"
 export FILE="menu.csv"
 ```
