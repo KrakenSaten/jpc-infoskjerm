@@ -78,8 +78,6 @@ const elements = {
   pollStatus: document.getElementById("poll-status"),
   pollQuestion: document.getElementById("poll-question"),
   pollOptions: document.getElementById("poll-options"),
-  pollBar: document.getElementById("poll-bar"),
-  pollCount: document.getElementById("poll-count"),
 
   newsCard: document.getElementById("news-card"),
   newsList: document.getElementById("news-list"),

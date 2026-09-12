@@ -256,13 +256,14 @@ Bytt ut `question`- og `option`-radene, og **slett alle `vote`-rader**.
 |---|---|---|
 | `question` | (tom) | Spørsmålet som vises på skjermen |
 | `option` | `a`, `b`, `c` … | Ett svaralternativ |
-| `voters` | (tom) | Antall ansatte som kan svare (nå `7`) |
-| `results` | (tom) | `done`, `always` eller `hidden` |
+| `voters` | (tom) | Antall ansatte som kan svare; styrer når kortet sier «fullført» |
+| `results` | (tom) | `always`, `done` eller `hidden` |
 | `vote` | `v1`–`v7` | Alternativ-ID-en personen valgte |
 
-- `results` styrer når stemmetallene vises: `done` = først når alle har svart
-  (standard), `always` = hele tiden, `hidden` = aldri. Antallet som har svart
-  vises uansett.
+- `results` styrer når stemmetallene vises: `always` = hele tiden (standard),
+  `done` = først når alle har svart, `hidden` = aldri. Med `done` og `hidden`
+  viser kortet ingen tall underveis — bare spørsmålet, alternativene og
+  «åpen»/«fullført» i korthodet.
 - Minst to `option`-rader, ellers viser kortet en feilmelding.
 - Tom eller manglende `question`-rad skjuler hele kortet. Det er måten å avslutte
   en avstemning på uten å slette fila.
@@ -314,7 +315,7 @@ wx-svg (+ wx-night, wx-daysep, wx-tgrid, wx-zero, wx-rain, wx-temp-area,
         wx-temp-line, wx-icons, wx-labels, wx-yleft, wx-yright, wx-xlabels, wx-days)
 tbane-card, tbane-body
 notice, notice-tag, notice-msg
-poll-card, poll-status, poll-question, poll-options, poll-bar, poll-count
+poll-card, poll-status, poll-question, poll-options
 news-card, news-list, news-page, news-updated, news-dots
 cd-d, cd-h, cd-m, cd-s
 mode-toggle

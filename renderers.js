@@ -741,11 +741,6 @@
     });
     list.classList.toggle("with-results", showResults);
 
-    // Maaleren klippes til 100 %, men tallet vises raatt: staar det "8 av 7"
-    // er poll.csv feilredigert, og det skal synes.
-    const answeredShare = poll.voters > 0 ? (poll.answered / poll.voters) * 100 : 0;
-    elements.pollBar.style.width = Math.min(100, answeredShare).toFixed(1) + "%";
-    elements.pollCount.textContent = `${poll.answered} av ${poll.voters} har svart`;
     elements.pollStatus.textContent = isComplete ? "fullf\u00f8rt" : "\u00e5pen";
   }
 
@@ -756,7 +751,6 @@
     elements.pollStatus.textContent = "";
     elements.pollQuestion.textContent = "Avstemningen er utilgjengelig akkurat n\u00e5.";
     elements.pollOptions.innerHTML = "";
-    elements.pollCount.textContent = "";
   }
 
   /* ---------- LIVE-STATUS ---------- */

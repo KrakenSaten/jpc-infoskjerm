@@ -341,14 +341,15 @@ html, body {
    hoeyt vaerkortet over blir. */
 .poll { margin-top: auto; }
 .poll[hidden] { display: none; }
+.poll > h3 { margin-bottom: 6px; padding-bottom: 6px; }
 
 .poll .question {
   font-family: var(--serif);
   font-weight: 700;
-  font-size: 17px;
-  line-height: 1.2;
+  font-size: 15px;
+  line-height: 1.18;
   letter-spacing: -.01em;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .poll .options { list-style: none; margin: 0; padding: 0; }
@@ -359,7 +360,7 @@ html, body {
   grid-template-columns: 18px 1fr;
   gap: 8px;
   align-items: baseline;
-  padding: 3px 0;
+  padding: 2px 0;
   border-bottom: 1px dotted var(--rule-faint);
 }
 
@@ -390,11 +391,11 @@ html, body {
   color: var(--muted);
 }
 
-.poll .options .txt { font-family: var(--serif); font-size: 14px; line-height: 1.3; }
+.poll .options .txt { font-family: var(--serif); font-size: 13px; line-height: 1.25; }
 
 .poll .options .cnt {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
@@ -403,30 +404,9 @@ html, body {
 .poll .options li.lead .cnt { color: var(--accent); }
 .poll .options li.lead .txt { font-weight: 600; }
 
-.poll .tally {
-  margin-top: 8px;
-  padding-top: 7px;
-  border-top: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.poll .meter { flex: 1; height: 6px; background: var(--rule-faint); overflow: hidden; }
-.poll .meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 600ms ease; }
-
-.poll .count {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
 /* Feiltilstand: samme daempede tone som lunsjkortet */
-.poll.error .question { font-weight: 400; font-style: italic; font-size: 16px; color: var(--muted); }
-.poll.error .options, .poll.error .tally { display: none; }
+.poll.error .question { font-weight: 400; font-style: italic; font-size: 14px; color: var(--muted); }
+.poll.error .options { display: none; }
 
 .tbane table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
 .tbane thead th { text-align: left; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); font-weight: 500; padding: 6px 0; border-bottom: 1px solid var(--rule); }

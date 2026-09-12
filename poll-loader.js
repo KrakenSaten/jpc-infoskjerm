@@ -12,7 +12,7 @@
   //   question;;Hvor skal vi ha julebordet i aar?
   //   option;a;Bowling og pizza
   //   voters;;7
-  //   results;;done          (hidden | always | done)
+  //   results;;always        (always | done | hidden)
   //   vote;v3;a              (v1-v7 er anonyme plasser, ikke navn)
   //
   // Returnerer null naar fila er gyldig, men ingen avstemning er aktiv
@@ -35,7 +35,7 @@
 
     let question = "";
     let voters = DEFAULT_VOTERS;
-    let resultMode = "done";
+    let resultMode = "always";
     const options = [];
     // Map gir dedupe pr. velger: legger noen inn to stemmer, teller den siste.
     const votes = new Map();
