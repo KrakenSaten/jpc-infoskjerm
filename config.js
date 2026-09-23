@@ -26,8 +26,8 @@ news: 10 * 60 * 1_000,
 menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
 poll: 5 * 60 * 1_000, // Stemmer kommer som commits - sjekk hvert 5. min
 }),
-jubileeDepartureDate: new Date("2026-09-22T08:15:00+02:00"),
-jubileeLabel: "Morgenmøte tirsdag 22. september ☕",
+jubileeDepartureDate: new Date("2026-09-23T08:15:00+02:00"),
+jubileeLabel: "Morgenmøte onsdag 23. september ☕",
 nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
 menuGithubUrl: MENU_GITHUB_URL,
 pollGithubUrl: POLL_GITHUB_URL,
