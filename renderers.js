@@ -641,9 +641,9 @@
     });
     order.forEach(source => {
       const list = groups[source];
-      // Saker med CVE/handling tar to linjer: faerre per side.
+      // Zero Wire (saker med CVE/handling): alle saker paa en side, ingen rotasjon.
       const rich = list.some(it => it.cves.length || it.action);
-      const size = rich ? 3 : newsState.pageSize;
+      const size = rich ? Math.max(1, list.length) : newsState.pageSize;
       for (let i = 0; i < list.length; i += size) {
         pages.push({ source, items: list.slice(i, i + size) });
       }
@@ -671,6 +671,7 @@
     } else {
       slice.forEach(n => {
         const li = document.createElement("li");
+        if (n.cves.length || n.action) li.className = "zw-item";
         const time = document.createElement("span");
         time.className = "time";
         time.textContent = n.time || "";
