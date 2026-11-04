@@ -619,7 +619,7 @@
     return formatNewsTime(dateText);
   }
 
-  function renderNews(elements, items) {
+  function renderNews(elements, items, { keepPage = false } = {}) {
     // items kommer fra services.js med { title, link, sourceLabel } der sourceLabel er tid fra formatNewsTimestamp
     // items kan ha et source-felt (overskrift i korthodet). Sidene bygges per kilde,
     // slik at kortet veksler mellom kildene i stedet for aa blande dem.
@@ -628,6 +628,9 @@
       head: item.title,
       link: item.link,
       source: item.source || "Nyheter \u00b7 NRK",
+      cves: item.cves || [],
+      action: item.action || null,
+      cvss: item.cvss || null,
     }));
     const pages = [];
     const order = [];
@@ -638,12 +641,15 @@
     });
     order.forEach(source => {
       const list = groups[source];
-      for (let i = 0; i < list.length; i += newsState.pageSize) {
-        pages.push({ source, items: list.slice(i, i + newsState.pageSize) });
+      // Saker med CVE/handling tar to linjer: faerre per side.
+      const rich = list.some(it => it.cves.length || it.action);
+      const size = rich ? 3 : newsState.pageSize;
+      for (let i = 0; i < list.length; i += size) {
+        pages.push({ source, items: list.slice(i, i + size) });
       }
     });
     newsState.pages = pages;
-    newsState.currentPage = 0;
+    if (!keepPage) newsState.currentPage = 0;
     renderNewsPage(elements);
   }
 
@@ -668,11 +674,37 @@
         const time = document.createElement("span");
         time.className = "time";
         time.textContent = n.time || "";
+        const body = document.createElement("div");
+        body.className = "news-body";
+        if (n.action) {
+          const tag = document.createElement("span");
+          tag.className = "zw-tag zw-" + n.action.key;
+          tag.textContent = n.action.label;
+          body.appendChild(tag);
+        }
         const head = document.createElement("span");
         head.className = "head";
         head.textContent = n.head;
+        body.appendChild(head);
+        if (n.cves.length || n.cvss) {
+          const meta = document.createElement("div");
+          meta.className = "zw-meta";
+          if (n.cves.length) {
+            const c = document.createElement("span");
+            c.textContent = n.cves.join(" \u00b7 ");
+            meta.appendChild(c);
+          }
+          if (n.cvss) {
+            const sev = String(n.cvss.severity || "").toLowerCase();
+            const sc = document.createElement("span");
+            sc.className = "zw-score zw-sev-" + (sev || "unknown");
+            sc.textContent = "CVSS " + n.cvss.score.toFixed(1) + (sev ? " " + sev.toUpperCase() : "");
+            meta.appendChild(sc);
+          }
+          body.appendChild(meta);
+        }
         li.appendChild(time);
-        li.appendChild(head);
+        li.appendChild(body);
         list.appendChild(li);
       });
     }
