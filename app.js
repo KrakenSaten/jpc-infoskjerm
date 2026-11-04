@@ -33,7 +33,7 @@ const {
   autoTheme,
   getWeatherSummary,
 } = window.JPCRenderers;
-const { fetchDeparturesData, fetchNewsData, fetchWeatherData } = window.JPCServices;
+const { fetchDeparturesData, fetchNewsData, fetchCvss, fetchWeatherData } = window.JPCServices;
 
 const NEWS_ROTATION_MS = 15_000;
 
@@ -239,39 +239,33 @@ async function fetchWeather() {
 const NRK_SOURCE_LABEL = "Nyheter \u00b7 NRK";
 const ZERO_WIRE_SOURCE_LABEL = "Sikkerhet \u00b7 Cloudflare Zero Wire";
 
-// Henter NRK og Zero Wire hver for seg. Feiler en kilde, brukes cache for den
-// kilden; Zero Wire uten data hoppes rett og slett over i rotasjonen.
+// Henter NRK og Zero Wire hver for seg (en kilde er av hvis URL-en er null).
+// Feiler en kilde, brukes cache for den kilden.
 async function fetchNews() {
   const cached = readCache(CACHE_KEYS.news) || {};
   const [nrkResult, zwResult] = await Promise.allSettled([
-    fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp),
+    NRK_NEWS_FEED_URL ? fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp) : Promise.resolve([]),
     ZERO_WIRE_FEED_URL
       ? fetchNewsData(ZERO_WIRE_FEED_URL, formatNewsTimestamp, 6, { proxyFallback: true })
       : Promise.resolve([]),
   ]);
 
-  if (nrkResult.status === "rejected") {
-    console.warn("Nyheter: NRK-henting feilet, bruker cache om mulig.", nrkResult.reason);
-  }
-  if (zwResult.status === "rejected") {
-    console.warn("Nyheter: Zero Wire-henting feilet, bruker cache om mulig.", zwResult.reason);
-  }
+  if (nrkResult.status === "rejected") console.warn("Nyheter: NRK-henting feilet, bruker cache.", nrkResult.reason);
+  if (zwResult.status === "rejected") console.warn("Nyheter: Zero Wire-henting feilet, bruker cache.", zwResult.reason);
 
-  const nrkItems = nrkResult.status === "fulfilled"
-    ? nrkResult.value
-    : (cached.nrk || cached.items || []);
-  const zwItems = zwResult.status === "fulfilled"
-    ? zwResult.value
-    : (ZERO_WIRE_FEED_URL ? (cached.zeroWire || []) : []);
+  const nrkItems = !NRK_NEWS_FEED_URL ? []
+    : nrkResult.status === "fulfilled" ? nrkResult.value : (cached.nrk || cached.items || []);
+  const zwItems = !ZERO_WIRE_FEED_URL ? []
+    : zwResult.status === "fulfilled" ? zwResult.value : (cached.zeroWire || []);
 
-  const nrkOk = nrkResult.status === "fulfilled";
-  const updatedAt = nrkOk
-    ? new Date()
-    : (cached.fetchedAt ? new Date(cached.fetchedAt) : null);
+  // Ferskhet maales paa hovedkilden: NRK hvis den er paa, ellers Zero Wire.
+  const mainOk = NRK_NEWS_FEED_URL ? nrkResult.status === "fulfilled" : zwResult.status === "fulfilled";
+  const mainItems = NRK_NEWS_FEED_URL ? nrkItems : zwItems;
+  const updatedAt = mainOk ? new Date() : (cached.fetchedAt ? new Date(cached.fetchedAt) : null);
 
   const items = [
     ...nrkItems.map(i => ({ ...i, source: NRK_SOURCE_LABEL })),
-    ...zwItems.map(i => ({ ...i, source: ZERO_WIRE_SOURCE_LABEL })),
+    ...zwItems.map(i => ({ ...i, source: ZERO_WIRE_SOURCE_LABEL, cvss: cachedCvssFor(i.cves) })),
   ];
   renderNews(elements, items);
 
@@ -285,7 +279,58 @@ async function fetchNews() {
     zeroWire: zwItems,
     fetchedAt: (updatedAt || new Date()).toISOString(),
   });
-  setSourceUpdate("news", updatedAt, !nrkOk && nrkItems.length > 0);
+  setSourceUpdate("news", updatedAt, !mainOk && mainItems.length > 0);
+
+  enrichCvss(items);
+}
+
+/* ---------- CVSS fra NVD (bufret, rolig takt pga. NVDs rate limit) ---------- */
+
+const CVSS_TTL_MS = 12 * 60 * 60 * 1000;
+const CVSS_MISS_TTL_MS = 3 * 60 * 60 * 1000;
+const CVSS_GAP_MS = 7_000;
+let cvssRunning = false;
+
+function cachedCvssFor(cves) {
+  const cache = readCache(CACHE_KEYS.cvss) || {};
+  let best = null;
+  (cves || []).forEach(cve => {
+    const hit = cache[cve]?.value;
+    if (hit && (!best || hit.score > best.score)) best = hit;
+  });
+  return best;
+}
+
+async function enrichCvss(items) {
+  if (cvssRunning) return;
+  cvssRunning = true;
+  try {
+    const cache = readCache(CACHE_KEYS.cvss) || {};
+    const now = Date.now();
+    const wanted = [...new Set(items.flatMap(i => i.cves || []))].filter(cve => {
+      const entry = cache[cve];
+      if (!entry) return true;
+      const ttl = entry.value ? CVSS_TTL_MS : CVSS_MISS_TTL_MS;
+      return now - entry.checkedAt > ttl;
+    });
+    let changed = false;
+    for (const cve of wanted) {
+      try {
+        cache[cve] = { value: await fetchCvss(cve), checkedAt: Date.now() };
+        changed = true;
+        writeCache(CACHE_KEYS.cvss, cache);
+      } catch (err) {
+        console.warn("CVSS: oppslag feilet for " + cve + ":", err && err.message ? err.message : err);
+      }
+      await new Promise(r => setTimeout(r, CVSS_GAP_MS));
+    }
+    if (changed) {
+      const updated = items.map(i => (i.cves && i.cves.length ? { ...i, cvss: cachedCvssFor(i.cves) } : i));
+      renderNews(elements, updated, { keepPage: true });
+    }
+  } finally {
+    cvssRunning = false;
+  }
 }
 
 function refreshAll() {
