@@ -28,9 +28,11 @@ poll: 5 * 60 * 1_000, // Stemmer kommer som commits - sjekk hvert 5. min
 }),
 jubileeDepartureDate: new Date("2026-11-04T08:15:00+01:00"),
 jubileeLabel: "Morgenmøte onsdag 4. november ☕",
-nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
+// NRK er midlertidig skrudd av (null). Sett tilbake URL-en for aa vise NRK igjen:
+// "https://www.nrk.no/nyheter/siste.rss"
+nrkNewsFeedUrl: null,
 // Cloudflare Radar Zero Wire: sikkerhetsbriefinger. Vises vekselvis med NRK.
-// Sett til null for aa skru av. Feiler hentingen, vises bare NRK.
+// Sett til null for aa skru av.
 zeroWireFeedUrl: "https://radar.cloudflare.com/security/zero-wire/rss",
 menuGithubUrl: MENU_GITHUB_URL,
 pollGithubUrl: POLL_GITHUB_URL,
@@ -40,6 +42,7 @@ departures: "jpc-departures-cache-v4",
 weather: "jpc-weather-cache-v4",
 news: "jpc-news-cache-v3",
 poll: "jpc-poll-cache-v1",
+cvss: "jpc-cvss-cache-v1",
 }),
 });
 }());
