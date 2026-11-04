@@ -246,7 +246,7 @@ async function fetchNews() {
   const [nrkResult, zwResult] = await Promise.allSettled([
     fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp),
     ZERO_WIRE_FEED_URL
-      ? fetchNewsData(ZERO_WIRE_FEED_URL, formatNewsTimestamp, 6)
+      ? fetchNewsData(ZERO_WIRE_FEED_URL, formatNewsTimestamp, 6, { proxyFallback: true })
       : Promise.resolve([]),
   ]);
 
