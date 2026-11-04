@@ -5,6 +5,7 @@ const {
   jubileeDepartureDate: JUBILEE_DEPARTURE_DATE,
   jubileeLabel: JUBILEE_LABEL,
   nrkNewsFeedUrl: NRK_NEWS_FEED_URL,
+  zeroWireFeedUrl: ZERO_WIRE_FEED_URL,
   cacheKeys: CACHE_KEYS,
 } = window.JPC_CONFIG;
 
@@ -235,29 +236,56 @@ async function fetchWeather() {
   }
 }
 
+const NRK_SOURCE_LABEL = "Nyheter \u00b7 NRK";
+const ZERO_WIRE_SOURCE_LABEL = "Sikkerhet \u00b7 Cloudflare Zero Wire";
+
+// Henter NRK og Zero Wire hver for seg. Feiler en kilde, brukes cache for den
+// kilden; Zero Wire uten data hoppes rett og slett over i rotasjonen.
 async function fetchNews() {
-  try {
-    const items = await fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp);
-    const updatedAt = new Date();
-    renderNews(elements, items);
+  const cached = readCache(CACHE_KEYS.news) || {};
+  const [nrkResult, zwResult] = await Promise.allSettled([
+    fetchNewsData(NRK_NEWS_FEED_URL, formatNewsTimestamp),
+    ZERO_WIRE_FEED_URL
+      ? fetchNewsData(ZERO_WIRE_FEED_URL, formatNewsTimestamp, 6)
+      : Promise.resolve([]),
+  ]);
+
+  if (nrkResult.status === "rejected") {
+    console.warn("Nyheter: NRK-henting feilet, bruker cache om mulig.", nrkResult.reason);
+  }
+  if (zwResult.status === "rejected") {
+    console.warn("Nyheter: Zero Wire-henting feilet, bruker cache om mulig.", zwResult.reason);
+  }
+
+  const nrkItems = nrkResult.status === "fulfilled"
+    ? nrkResult.value
+    : (cached.nrk || cached.items || []);
+  const zwItems = zwResult.status === "fulfilled"
+    ? zwResult.value
+    : (ZERO_WIRE_FEED_URL ? (cached.zeroWire || []) : []);
+
+  const nrkOk = nrkResult.status === "fulfilled";
+  const updatedAt = nrkOk
+    ? new Date()
+    : (cached.fetchedAt ? new Date(cached.fetchedAt) : null);
+
+  const items = [
+    ...nrkItems.map(i => ({ ...i, source: NRK_SOURCE_LABEL })),
+    ...zwItems.map(i => ({ ...i, source: ZERO_WIRE_SOURCE_LABEL })),
+  ];
+  renderNews(elements, items);
+
+  if (updatedAt) {
     elements.newsUpdated.textContent =
       String(updatedAt.getHours()).padStart(2, "0") + ":" +
       String(updatedAt.getMinutes()).padStart(2, "0");
-    writeCache(CACHE_KEYS.news, { items, fetchedAt: updatedAt.toISOString() });
-    setSourceUpdate("news", updatedAt, false);
-  } catch (error) {
-    console.warn("Nyheter: henting feilet, bruker cache om mulig.", error);
-    const cached = readCache(CACHE_KEYS.news);
-    const items = cached?.items || [];
-    const cachedDate = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
-    renderNews(elements, items);
-    if (cachedDate) {
-      elements.newsUpdated.textContent =
-        String(cachedDate.getHours()).padStart(2, "0") + ":" +
-        String(cachedDate.getMinutes()).padStart(2, "0");
-    }
-    setSourceUpdate("news", cachedDate, items.length > 0);
   }
+  writeCache(CACHE_KEYS.news, {
+    nrk: nrkItems,
+    zeroWire: zwItems,
+    fetchedAt: (updatedAt || new Date()).toISOString(),
+  });
+  setSourceUpdate("news", updatedAt, !nrkOk && nrkItems.length > 0);
 }
 
 function refreshAll() {
