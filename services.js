@@ -208,7 +208,7 @@
     });
   }
 
-  async function fetchNewsData(feedUrl, formatNewsTimestamp) {
+  async function fetchNewsData(feedUrl, formatNewsTimestamp, maxItems = 10) {
     return fetchWithRetry(async () => {
       const response = await fetch(feedUrl + "?t=" + Date.now(), { cache: "no-store" });
       if (!response.ok) throw new Error("HTTP " + response.status);
@@ -222,7 +222,7 @@
           publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
         }))
         .sort((a, b) => (new Date(b.publishedAt).getTime() || 0) - (new Date(a.publishedAt).getTime() || 0))
-        .slice(0, 10)
+        .slice(0, maxItems)
         .map(item => ({
           title: item.title,
           link: item.link,
