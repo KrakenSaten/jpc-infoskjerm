@@ -208,19 +208,49 @@
     });
   }
 
-  async function fetchNewsData(feedUrl, formatNewsTimestamp, maxItems = 10) {
+  // Direkte RSS-henting fra nettleseren.
+  async function fetchRssDirect(feedUrl) {
+    const response = await fetch(feedUrl + "?t=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const rssText = await response.text();
+    const xml = new DOMParser().parseFromString(rssText, "application/xml");
+    const items = Array.from(xml.querySelectorAll("channel > item")).map(item => ({
+      title: item.querySelector("title")?.textContent?.trim() || "Uten tittel",
+      link: item.querySelector("link")?.textContent?.trim() || "",
+      publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
+    }));
+    if (!items.length) throw new Error("Tom eller uleselig feed");
+    return items;
+  }
+
+  // Reserve via rss2json for feeder som ikke tillater henting fra nettleseren (CORS).
+  async function fetchRssViaProxy(feedUrl) {
+    const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(feedUrl);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error("rss2json HTTP " + response.status);
+    const data = await response.json();
+    if (data.status !== "ok" || !Array.isArray(data.items)) {
+      throw new Error("rss2json: " + (data.message || data.status));
+    }
+    return data.items.map(item => ({
+      title: (item.title || "Uten tittel").trim(),
+      link: item.link || "",
+      // rss2json gir "YYYY-MM-DD HH:MM:SS" i UTC
+      publishedAt: item.pubDate ? item.pubDate.replace(" ", "T") + "Z" : "",
+    }));
+  }
+
+  async function fetchNewsData(feedUrl, formatNewsTimestamp, maxItems = 10, { proxyFallback = false } = {}) {
     return fetchWithRetry(async () => {
-      const response = await fetch(feedUrl + "?t=" + Date.now(), { cache: "no-store" });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const rssText = await response.text();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(rssText, "application/xml");
-      return Array.from(xml.querySelectorAll("channel > item"))
-        .map(item => ({
-          title: item.querySelector("title")?.textContent?.trim() || "Uten tittel",
-          link: item.querySelector("link")?.textContent?.trim() || "https://www.nrk.no/",
-          publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
-        }))
+      let items;
+      try {
+        items = await fetchRssDirect(feedUrl);
+      } catch (directError) {
+        if (!proxyFallback) throw directError;
+        console.warn("Direkte RSS-henting feilet, prøver rss2json.", feedUrl, directError);
+        items = await fetchRssViaProxy(feedUrl);
+      }
+      return items
         .sort((a, b) => (new Date(b.publishedAt).getTime() || 0) - (new Date(a.publishedAt).getTime() || 0))
         .slice(0, maxItems)
         .map(item => ({
