@@ -29,6 +29,9 @@ poll: 5 * 60 * 1_000, // Stemmer kommer som commits - sjekk hvert 5. min
 jubileeDepartureDate: new Date("2026-11-04T08:15:00+01:00"),
 jubileeLabel: "Morgenmøte onsdag 4. november ☕",
 nrkNewsFeedUrl: "https://www.nrk.no/nyheter/siste.rss",
+// Cloudflare Radar Zero Wire: sikkerhetsbriefinger. Vises vekselvis med NRK.
+// Sett til null for aa skru av. Feiler hentingen, vises bare NRK.
+zeroWireFeedUrl: "https://radar.cloudflare.com/security/zero-wire/rss",
 menuGithubUrl: MENU_GITHUB_URL,
 pollGithubUrl: POLL_GITHUB_URL,
 cacheKeys: Object.freeze({
