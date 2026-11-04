@@ -598,6 +598,7 @@
 
   const newsState = {
     items: [],
+    pages: [],
     pageSize: 5,
     currentPage: 0,
   };
@@ -606,6 +607,10 @@
     if (!dateText) return "";
     const d = new Date(dateText);
     if (Number.isNaN(d.getTime())) return "";
+    // Eldre enn i dag: vis dato i stedet for klokkeslett
+    if (d.toDateString() !== new Date().toDateString()) {
+      return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + ".";
+    }
     return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
   }
 
@@ -616,23 +621,41 @@
 
   function renderNews(elements, items) {
     // items kommer fra services.js med { title, link, sourceLabel } der sourceLabel er tid fra formatNewsTimestamp
+    // items kan ha et source-felt (overskrift i korthodet). Sidene bygges per kilde,
+    // slik at kortet veksler mellom kildene i stedet for aa blande dem.
     newsState.items = items.map(item => ({
       time: item.sourceLabel || formatNewsTime(item.publishedAt),
       head: item.title,
       link: item.link,
+      source: item.source || "Nyheter \u00b7 NRK",
     }));
+    const pages = [];
+    const order = [];
+    const groups = {};
+    newsState.items.forEach(it => {
+      if (!groups[it.source]) { groups[it.source] = []; order.push(it.source); }
+      groups[it.source].push(it);
+    });
+    order.forEach(source => {
+      const list = groups[source];
+      for (let i = 0; i < list.length; i += newsState.pageSize) {
+        pages.push({ source, items: list.slice(i, i + newsState.pageSize) });
+      }
+    });
+    newsState.pages = pages;
     newsState.currentPage = 0;
     renderNewsPage(elements);
   }
 
   function renderNewsPage(elements) {
     const list = elements.newsList;
-    const items = newsState.items;
-    const pages = Math.max(1, Math.ceil(items.length / newsState.pageSize));
+    const pages = Math.max(1, newsState.pages.length);
     if (newsState.currentPage >= pages) newsState.currentPage = 0;
 
-    const start = newsState.currentPage * newsState.pageSize;
-    const slice = items.slice(start, start + newsState.pageSize);
+    const page = newsState.pages[newsState.currentPage];
+    const slice = page ? page.items : [];
+    const sourceEl = document.getElementById("news-source");
+    if (sourceEl) sourceEl.textContent = page ? page.source : "Nyheter \u00b7 NRK";
 
     list.innerHTML = "";
     if (!slice.length) {
@@ -670,8 +693,7 @@
   }
 
   function rotateNewsPage(elements) {
-    const items = newsState.items;
-    const pages = Math.max(1, Math.ceil(items.length / newsState.pageSize));
+    const pages = newsState.pages.length;
     if (pages <= 1) return;
     newsState.currentPage = (newsState.currentPage + 1) % pages;
     renderNewsPage(elements);
