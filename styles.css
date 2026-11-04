@@ -446,6 +446,8 @@ html, body {
 .news .time { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .news .head { font-family: var(--serif); font-size: 15px; line-height: 1.32; color: var(--ink); }
 .news .news-body { min-width: 0; }
+.news .news-list li.zw-item { padding: 6px 0; }
+.news .news-list li.zw-item .head { font-size: 14px; line-height: 1.25; }
 .news .zw-tag { display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; margin-right: 8px; border: 1px dashed currentColor; border-radius: 3px; vertical-align: 2px; color: var(--muted); }
 .news .zw-tag.zw-patch    { color: #b3261e; background: rgba(179, 38, 30, .08); }
 .news .zw-tag.zw-review   { color: #6b3fb3; background: rgba(107, 63, 179, .08); }
