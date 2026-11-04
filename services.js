@@ -208,11 +208,7 @@
     });
   }
 
-  // Direkte RSS-henting fra nettleseren.
-  async function fetchRssDirect(feedUrl) {
-    const response = await fetch(feedUrl + "?t=" + Date.now(), { cache: "no-store" });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    const rssText = await response.text();
+  function parseRssItems(rssText) {
     const xml = new DOMParser().parseFromString(rssText, "application/xml");
     const items = Array.from(xml.querySelectorAll("channel > item")).map(item => ({
       title: item.querySelector("title")?.textContent?.trim() || "Uten tittel",
@@ -223,21 +219,56 @@
     return items;
   }
 
-  // Reserve via rss2json for feeder som ikke tillater henting fra nettleseren (CORS).
+  // Direkte RSS-henting fra nettleseren.
+  async function fetchRssDirect(feedUrl) {
+    const response = await fetch(feedUrl + "?t=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    return parseRssItems(await response.text());
+  }
+
+  // Reserver for feeder uten CORS-header. Proevd i rekkefoelge til en lykkes.
+  const RSS_PROXIES = [
+    {
+      name: "allorigins",
+      url: feedUrl => "https://api.allorigins.win/raw?url=" + encodeURIComponent(feedUrl + "?t=" + Date.now()),
+      parse: async response => parseRssItems(await response.text()),
+    },
+    {
+      name: "codetabs",
+      url: feedUrl => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(feedUrl),
+      parse: async response => parseRssItems(await response.text()),
+    },
+    {
+      name: "rss2json",
+      url: feedUrl => "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(feedUrl),
+      parse: async response => {
+        const data = await response.json();
+        if (data.status !== "ok" || !Array.isArray(data.items) || !data.items.length) {
+          throw new Error("rss2json: " + (data.message || data.status));
+        }
+        return data.items.map(item => ({
+          title: (item.title || "Uten tittel").trim(),
+          link: item.link || "",
+          // rss2json gir "YYYY-MM-DD HH:MM:SS" i UTC
+          publishedAt: item.pubDate ? item.pubDate.replace(" ", "T") + "Z" : "",
+        }));
+      },
+    },
+  ];
+
   async function fetchRssViaProxy(feedUrl) {
-    const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(feedUrl);
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) throw new Error("rss2json HTTP " + response.status);
-    const data = await response.json();
-    if (data.status !== "ok" || !Array.isArray(data.items)) {
-      throw new Error("rss2json: " + (data.message || data.status));
+    for (const proxy of RSS_PROXIES) {
+      try {
+        const response = await fetch(proxy.url(feedUrl), { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const items = await proxy.parse(response);
+        console.info("RSS hentet via " + proxy.name + ":", feedUrl);
+        return items;
+      } catch (err) {
+        console.warn("RSS-reserve " + proxy.name + " feilet:", err && err.message ? err.message : err);
+      }
     }
-    return data.items.map(item => ({
-      title: (item.title || "Uten tittel").trim(),
-      link: item.link || "",
-      // rss2json gir "YYYY-MM-DD HH:MM:SS" i UTC
-      publishedAt: item.pubDate ? item.pubDate.replace(" ", "T") + "Z" : "",
-    }));
+    throw new Error("Alle RSS-reserver feilet for " + feedUrl);
   }
 
   async function fetchNewsData(feedUrl, formatNewsTimestamp, maxItems = 10, { proxyFallback = false } = {}) {
@@ -247,7 +278,7 @@
         items = await fetchRssDirect(feedUrl);
       } catch (directError) {
         if (!proxyFallback) throw directError;
-        console.warn("Direkte RSS-henting feilet, prøver rss2json.", feedUrl, directError);
+        console.warn("Direkte RSS-henting feilet (CORS), prøver reserver.", feedUrl);
         items = await fetchRssViaProxy(feedUrl);
       }
       return items
