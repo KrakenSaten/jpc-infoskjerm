@@ -208,13 +208,29 @@
     });
   }
 
+  function htmlToText(html) {
+    if (!html) return "";
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return (doc.body?.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
   function parseRssItems(rssText) {
     const xml = new DOMParser().parseFromString(rssText, "application/xml");
-    const items = Array.from(xml.querySelectorAll("channel > item")).map(item => ({
-      title: item.querySelector("title")?.textContent?.trim() || "Uten tittel",
-      link: item.querySelector("link")?.textContent?.trim() || "",
-      publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
-    }));
+    const nodes = Array.from(xml.querySelectorAll("channel > item"));
+    if (nodes.length) console.debug("RSS: foerste item (raadata):", nodes[0].outerHTML.slice(0, 3000));
+    const items = nodes.map(item => {
+      const encoded = item.getElementsByTagNameNS("http://purl.org/rss/1.0/modules/content/", "encoded")[0];
+      return {
+        title: item.querySelector("title")?.textContent?.trim() || "Uten tittel",
+        link: item.querySelector("link")?.textContent?.trim() || "",
+        publishedAt: item.querySelector("pubDate")?.textContent?.trim() || "",
+        categories: Array.from(item.querySelectorAll("category")).map(c => c.textContent.trim()).filter(Boolean),
+        text: [
+          htmlToText(item.querySelector("description")?.textContent || ""),
+          htmlToText(encoded?.textContent || ""),
+        ].join(" "),
+      };
+    });
     if (!items.length) throw new Error("Tom eller uleselig feed");
     return items;
   }
@@ -251,6 +267,8 @@
           link: item.link || "",
           // rss2json gir "YYYY-MM-DD HH:MM:SS" i UTC
           publishedAt: item.pubDate ? item.pubDate.replace(" ", "T") + "Z" : "",
+          categories: Array.isArray(item.categories) ? item.categories.map(String) : [],
+          text: [htmlToText(item.description), htmlToText(item.content)].join(" "),
         }));
       },
     },
@@ -271,6 +289,46 @@
     throw new Error("Alle RSS-reserver feilet for " + feedUrl);
   }
 
+  // CVE-numre fra tittel, kategorier og tekst. Unike, i rekkefoelge.
+  function extractCves(item) {
+    const hay = [item.title, ...(item.categories || []), item.text || ""].join(" ");
+    const found = hay.match(/CVE-\d{4}-\d{4,}/gi) || [];
+    return [...new Set(found.map(c => c.toUpperCase()))].slice(0, 3);
+  }
+
+  // Anbefalt handling (fargetaggen paa Zero Wire-kortene).
+  const ZERO_WIRE_ACTIONS = [
+    { key: "patch", label: "Patch", re: /^patch(\s+now)?$/i, textRe: /recommended action:?\s*patch\b/i },
+    { key: "review", label: "Review settings", re: /^review settings$/i, textRe: /review settings/i },
+    { key: "assess", label: "Assess exposure", re: /^assess exposure$/i, textRe: /assess exposure/i },
+    { key: "mitigate", label: "Mitigate", re: /^mitigate$/i, textRe: /recommended action:?\s*mitigate\b/i },
+    { key: "monitor", label: "Monitor", re: /^monitor$/i, textRe: /recommended action:?\s*monitor\b/i },
+  ];
+
+  function extractAction(item) {
+    for (const a of ZERO_WIRE_ACTIONS) {
+      if ((item.categories || []).some(c => a.re.test(c))) return { key: a.key, label: a.label };
+    }
+    for (const a of ZERO_WIRE_ACTIONS) {
+      if (a.textRe.test(item.text || "")) return { key: a.key, label: a.label };
+    }
+    return null;
+  }
+
+  // CVSS-score fra NVD. Returnerer { score, severity } eller null.
+  async function fetchCvss(cve) {
+    const url = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" + encodeURIComponent(cve);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error("NVD HTTP " + response.status);
+    const data = await response.json();
+    const metrics = data?.vulnerabilities?.[0]?.cve?.metrics || {};
+    const list = metrics.cvssMetricV40 || metrics.cvssMetricV31 || metrics.cvssMetricV30 || [];
+    const primary = list.find(m => m.type === "Primary") || list[0];
+    const d = primary?.cvssData;
+    if (!d || typeof d.baseScore !== "number") return null;
+    return { score: d.baseScore, severity: d.baseSeverity || primary.baseSeverity || "" };
+  }
+
   async function fetchNewsData(feedUrl, formatNewsTimestamp, maxItems = 10, { proxyFallback = false } = {}) {
     return fetchWithRetry(async () => {
       let items;
@@ -288,6 +346,8 @@
           title: item.title,
           link: item.link,
           sourceLabel: formatNewsTimestamp(item.publishedAt),
+          cves: extractCves(item),
+          action: extractAction(item),
         }));
     });
   }
@@ -295,6 +355,7 @@
   window.JPCServices = {
     fetchDeparturesData,
     fetchNewsData,
+    fetchCvss,
     fetchWeatherData,
   };
 }());
