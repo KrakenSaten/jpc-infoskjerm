@@ -26,8 +26,8 @@ news: 10 * 60 * 1_000,
 menu: 60 * 60 * 1_000, // Sjekk meny fra GitHub hver time
 poll: 5 * 60 * 1_000, // Stemmer kommer som commits - sjekk hvert 5. min
 }),
-jubileeDepartureDate: new Date("2026-11-04T08:15:00+01:00"),
-jubileeLabel: "Morgenmøte onsdag 4. november ☕",
+jubileeDepartureDate: new Date("2026-11-06T08:15:00+01:00"),
+jubileeLabel: "Morgenmøte fredag 6. november ☕",
 // NRK er midlertidig skrudd av (null). Sett tilbake URL-en for aa vise NRK igjen:
 // "https://www.nrk.no/nyheter/siste.rss"
 nrkNewsFeedUrl: null,
